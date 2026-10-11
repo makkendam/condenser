@@ -203,6 +203,12 @@ Page {
             radius: 4
             clip: true
 
+            ThumbnailProvider {
+                id: thumbnails
+                segmentPath: root.loadedClip && root.segmentIndex < root.loadedClip.segments.length
+                             ? root.loadedClip.segments[root.segmentIndex] : ""
+            }
+
             MediaPlayer {
                 id: mediaPlayer
                 source: root.loadedClip ? root.loadedClip.getSegmentMpdUrl(root.segmentIndex) : ""
@@ -398,25 +404,44 @@ Page {
                     border.color: "#40000000"
                 }
 
-                // Time under the mouse, so long recordings can be searched by hovering
+                // Preview frame and time under the mouse, so long recordings can be searched by hovering
                 Rectangle {
                     visible: timeline.hoverPosition >= 0
                     x: Math.max(-16, Math.min(timeline.width + 16 - width,
                                               timeline.xFor(timeline.hoverPosition) - width / 2))
                     y: -height - 18
-                    width: hoverLabel.implicitWidth + 12
-                    height: hoverLabel.implicitHeight + 6
-                    radius: 3
+                    width: 240 + 6
+                    height: hoverColumn.implicitHeight + 6
+                    radius: 4
                     color: "#e0000000"
                     border.color: "#60ffffff"
 
-                    Label {
-                        id: hoverLabel
+                    Column {
+                        id: hoverColumn
                         anchors.centerIn: parent
-                        text: root.formatTime(timeline.hoverPosition)
-                        font.pixelSize: 12
-                        font.features: { "tnum": 1 }
-                        color: "white"
+                        spacing: 3
+
+                        Rectangle {
+                            width: 240
+                            height: 135
+                            color: "#2a2a30"
+
+                            Image {
+                                anchors.fill: parent
+                                fillMode: Image.PreserveAspectCrop
+                                // revision: re-query when new thumbnails come in
+                                source: thumbnails.revision >= 0 && timeline.hoverPosition >= 0
+                                        ? thumbnails.thumbnailAt(timeline.hoverPosition) : ""
+                            }
+                        }
+
+                        Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: root.formatTime(timeline.hoverPosition)
+                            font.pixelSize: 12
+                            font.features: { "tnum": 1 }
+                            color: "white"
+                        }
                     }
                 }
 

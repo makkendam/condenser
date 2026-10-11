@@ -26,6 +26,7 @@ set(SOURCES
     src/videoexporter.cpp
     src/qvdfparser.cpp
     src/recordingfiltermodel.cpp
+    src/thumbnailprovider.cpp
 )
 
 # Header files
@@ -37,6 +38,7 @@ set(HEADERS
     src/videoexporter.h
     src/qvdfparser.h
     src/recordingfiltermodel.h
+    src/thumbnailprovider.h
 )
 
 # Create the executable

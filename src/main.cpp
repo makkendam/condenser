@@ -16,6 +16,7 @@
 #include "gameinfo.h"
 #include "recordingclip.h"
 #include "recordingfiltermodel.h"
+#include "thumbnailprovider.h"
 
 int main(int argc, char *argv[])
 {
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<VideoExporter>("CondenserApp", 1, 0, "VideoExporter");
     qmlRegisterType<RecordingClip>("CondenserApp", 1, 0, "RecordingClip");
     qmlRegisterType<RecordingFilterModel>("CondenserApp", 1, 0, "RecordingFilterModel");
+    qmlRegisterType<ThumbnailProvider>("CondenserApp", 1, 0, "ThumbnailProvider");
 
     // Create and expose global instances to QML
     SystemChecker systemChecker;
