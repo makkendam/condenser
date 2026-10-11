@@ -459,7 +459,7 @@ Page {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: editorRow.implicitHeight + 12
-            color: Material.backgroundDimColor
+            color: "#2a2a30"
             radius: 4
 
             RowLayout {
@@ -626,7 +626,7 @@ Page {
                     Rectangle {
                         Layout.preferredWidth: 72
                         Layout.preferredHeight: 40
-                        color: Material.backgroundDimColor
+                        color: "#2a2a30"
                         radius: 2
                         clip: true
 

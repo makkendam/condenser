@@ -77,7 +77,7 @@ Page {
                 
                 background: Rectangle {
                     implicitHeight: Material.textFieldHeight
-                    color: Material.backgroundDimColor
+                    color: "#2a2a30"
                     border.color: Material.dividerColor
                     border.width: 1
                     radius: 4

@@ -184,7 +184,7 @@ Page {
                             color: Material.hintTextColor
 
                             background: Rectangle {
-                                color: Material.backgroundDimColor
+                                color: "#2a2a30"
                                 radius: 4
                                 border.color: Material.dividerColor
                                 border.width: 1

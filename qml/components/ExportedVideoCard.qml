@@ -33,7 +33,7 @@ ItemDelegate {
             Layout.preferredHeight: 88
             Layout.alignment: Qt.AlignVCenter
             
-            color: Material.backgroundDimColor
+            color: "#2a2a30"
             border.color: Material.dividerColor
             border.width: 1
             radius: 4
