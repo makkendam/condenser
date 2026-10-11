@@ -1,22 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
   <rect x="8" y="8" width="240" height="240" rx="52" fill="#121212"/>
-  <!-- stoom boven de inlaat -->
-  <g fill="none" stroke="#8ab4f8" stroke-width="10" stroke-linecap="round">
-    <path d="M112 56 c-9 -10 9 -18 0 -30"/>
-    <path d="M144 56 c-9 -10 9 -18 0 -30"/>
+  <g fill="none" stroke="#8ab4f8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <!-- buis: vier banen met U-bochten, in- en uitlaat als haakjes -->
+    <path d="M44 50 C44 64 52 72 66 72 H190 A20 20 0 0 1 190 112 H66 A20 20 0 0 0 66 152 H190 A20 20 0 0 1 190 192 H66 C52 192 44 200 44 214"/>
+    <!-- lamellen -->
+    <path d="M90 72 V192 M128 72 V192 M166 72 V192"/>
   </g>
-  <!-- stoominlaat -->
-  <rect x="110" y="62" width="36" height="28" rx="4" fill="#5a7fb8"/>
-  <rect x="102" y="58" width="52" height="10" rx="3" fill="#7d9fd4"/>
-  <!-- liggende tank met bolle uiteinden -->
-  <rect x="36" y="86" width="184" height="96" rx="48" fill="#2f6fd0"/>
-  <!-- banden -->
-  <rect x="78" y="86" width="9" height="96" fill="#2559a8"/>
-  <rect x="169" y="86" width="9" height="96" fill="#2559a8"/>
-  <!-- glans -->
-  <rect x="60" y="98" width="136" height="10" rx="5" fill="#ffffff" opacity="0.22"/>
-  <path d="M116 118 L116 152 L146 135 Z" fill="#ffffff" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
-  <!-- uitlaat + druppel -->
-  <rect x="120" y="180" width="16" height="16" fill="#5a7fb8"/>
-  <path d="M128 202 C 136 214 142 220 142 228 a14 14 0 0 1 -28 0 C 114 220 120 214 128 202 Z" fill="#8ab4f8"/>
 </svg>
