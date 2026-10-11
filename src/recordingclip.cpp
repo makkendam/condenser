@@ -10,6 +10,7 @@
 #include <QLocale>
 #include <QUrl>
 #include <QDirIterator>
+#include <QTimeZone>
 
 RecordingClip::RecordingClip(QObject *parent)
     : QObject(parent)
@@ -703,7 +704,8 @@ QDateTime RecordingClip::parseRecordingDateTime(const QString &dateStr, const QS
     QTime time(hour, minute, second);
 
     if (date.isValid() && time.isValid()) {
-        return QDateTime(date, time);
+        // Steam names recordings after their UTC start time
+        return QDateTime(date, time, QTimeZone::UTC).toLocalTime();
     }
 
     return QDateTime();
