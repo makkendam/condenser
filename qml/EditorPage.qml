@@ -894,7 +894,7 @@ Page {
                         font.pixelSize: 11
                         color: Material.hintTextColor
                         text: {
-                            var size = qsTr("About %1").arg(exportPopup.formatSize(exportPopup.estimatedBytes))
+                            var size = qsTr("Up to about %1").arg(exportPopup.formatSize(exportPopup.estimatedBytes))
                             if (!exportPopup.reencoding) {
                                 if (root.sourceBitrateMbps <= 0) {
                                     return ""

@@ -8,9 +8,12 @@ ApplicationWindow {
     id: mainWindow
 
     visible: true
-    // Most of the screen: a big player and still room for a good part of the session list
-    width: Math.min(1700, Math.round(Screen.desktopAvailableWidth * 0.85))
+    // Most of the screen height: a big player and still room for a good part
+    // of the session list. The width then follows from the player, so a 16:9
+    // recording fills it without black bars (see playerArea in EditorPage.qml:
+    // 58% of the height, 12 px margins).
     height: Math.min(1500, Math.round(Screen.desktopAvailableHeight * 0.92))
+    width: 1280
     minimumWidth: 800
     minimumHeight: 600
 
@@ -24,6 +27,8 @@ ApplicationWindow {
 
     // Auto-fullscreen in SteamOS game mode
     Component.onCompleted: {
+        // Set once rather than bound, so resizing the window later stays free
+        width = Math.min(Screen.desktopAvailableWidth, Math.round(height * 0.58 * 16 / 9) + 24)
         if (systemChecker && systemChecker.isSteamGameMode) {
             mainWindow.showFullScreen()
         }
