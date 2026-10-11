@@ -561,23 +561,6 @@ Page {
                     ToolTip.text: qsTr("End the clip at the current position (O)")
                 }
 
-                Label {
-                    // Only as wide as the text, so repeat/clear sit right after it;
-                    // it still shrinks and elides when space runs out
-                    Layout.fillWidth: true
-                    Layout.maximumWidth: implicitWidth
-                    elide: Text.ElideRight
-                    font.pixelSize: 12
-                    color: root.hasRange ? Material.foreground : Material.hintTextColor
-                    text: root.hasRange
-                          ? qsTr("Clip %1 – %2 (%3)").arg(root.formatTime(root.rangeStartMs))
-                                                      .arg(root.formatTime(root.rangeEndMs))
-                                                      .arg(root.formatTime(root.rangeEndMs - root.rangeStartMs))
-                          : root.rangeStartMs >= 0
-                            ? qsTr("Clip starts at %1, now set the end").arg(root.formatTime(root.rangeStartMs))
-                            : qsTr("No clip set, export takes the whole recording")
-                }
-
                 ToolButton {
                     icon.name: "media-playlist-repeat"
                     visible: root.hasRange
@@ -610,6 +593,24 @@ Page {
                 }
 
                 Item { Layout.fillWidth: true }
+            }
+
+            // Clip info under the clip buttons, level with the time under the transport
+            Label {
+                x: clipRow.x + 8
+                y: transport.y + transportTime.y
+                width: clipRow.width - 8
+                elide: Text.ElideRight
+                font.pixelSize: 12
+                font.features: { "tnum": 1 }
+                color: Material.hintTextColor
+                text: root.hasRange
+                      ? qsTr("Clip %1 – %2 (%3)").arg(root.formatTime(root.rangeStartMs))
+                                                  .arg(root.formatTime(root.rangeEndMs))
+                                                  .arg(root.formatTime(root.rangeEndMs - root.rangeStartMs))
+                      : root.rangeStartMs >= 0
+                        ? qsTr("Clip starts at %1, now set the end").arg(root.formatTime(root.rangeStartMs))
+                        : qsTr("No clip set, export takes the whole recording")
             }
 
             ColumnLayout {
@@ -666,6 +667,7 @@ Page {
                 }
 
                 Label {
+                    id: transportTime
                     Layout.alignment: Qt.AlignHCenter
                     Layout.bottomMargin: 4
                     text: root.formatTime(timeline.shownPosition) + " / " + root.formatTime(mediaPlayer.duration)
