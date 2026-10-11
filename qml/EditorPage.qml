@@ -768,6 +768,22 @@ Page {
             return name
         }
 
+        readonly property bool reencoding: codecCombo.currentValue !== VideoExporter.CopyStream
+        readonly property real exportDurationMs: root.hasRange ? root.rangeEndMs - root.rangeStartMs
+                                                               : mediaPlayer.duration
+        // Video bitrate plus roughly 0.2 Mbps of audio
+        readonly property real estimatedBytes: {
+            var mbps = reencoding ? bitrateSlider.value : root.sourceBitrateMbps
+            return (mbps + 0.2) * 1000000 / 8 * exportDurationMs / 1000
+        }
+
+        function formatSize(bytes) {
+            if (bytes >= 1e9) {
+                return qsTr("%1 GB").arg((bytes / 1e9).toFixed(1))
+            }
+            return qsTr("%1 MB").arg(Math.max(1, Math.round(bytes / 1e6)))
+        }
+
         Connections {
             target: videoExporter
             function onExportCompleted(outputPath) { exportPopup.completedPath = outputPath }
@@ -837,28 +853,60 @@ Page {
                     onActivated: videoExporter.videoCodec = currentValue
                 }
 
-                Label {
-                    text: qsTr("Bitrate (Mbps)")
-                    visible: bitrateBox.visible
-                }
-                RowLayout {
-                    visible: bitrateBox.visible
+                Label { text: qsTr("Bitrate") }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
 
-                    SpinBox {
-                        id: bitrateBox
-                        visible: videoExporter && videoExporter.videoCodec !== VideoExporter.CopyStream
-                        from: 1
-                        to: root.maxBitrateMbps
-                        editable: true
-                        value: videoExporter ? Math.min(videoExporter.videoBitrateMbps, root.maxBitrateMbps) : 30
-                        onValueModified: videoExporter.videoBitrateMbps = value
+                    // Copying keeps the recording's own bitrate
+                    Label {
+                        visible: !exportPopup.reencoding
+                        text: root.sourceBitrateMbps > 0
+                              ? qsTr("%1 Mbps, same as the recording").arg(root.sourceBitrateMbps)
+                              : qsTr("Same as the recording")
+                    }
+
+                    RowLayout {
+                        visible: exportPopup.reencoding
+                        Layout.fillWidth: true
+
+                        Slider {
+                            id: bitrateSlider
+                            Material.accent: "#8ab4f8"
+                            Layout.fillWidth: true
+                            from: 2
+                            to: root.maxBitrateMbps
+                            stepSize: 1
+                            snapMode: Slider.SnapAlways
+                            value: videoExporter ? Math.min(videoExporter.videoBitrateMbps, root.maxBitrateMbps) : 12
+                            onMoved: videoExporter.videoBitrateMbps = value
+                        }
+                        Label {
+                            Layout.preferredWidth: 64
+                            horizontalAlignment: Text.AlignRight
+                            text: qsTr("%1 Mbps").arg(bitrateSlider.value)
+                        }
                     }
 
                     Label {
-                        visible: root.sourceBitrateMbps > 0
-                        text: qsTr("max %1, the recording's own bitrate").arg(root.sourceBitrateMbps)
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
                         font.pixelSize: 11
                         color: Material.hintTextColor
+                        text: {
+                            var size = qsTr("About %1").arg(exportPopup.formatSize(exportPopup.estimatedBytes))
+                            if (!exportPopup.reencoding) {
+                                if (root.sourceBitrateMbps <= 0) {
+                                    return ""
+                                }
+                                return size
+                            }
+                            var hint = codecCombo.currentValue === VideoExporter.H264Hardware
+                                       || codecCombo.currentValue === VideoExporter.H264Software
+                                       ? qsTr("H.264 needs about 20 Mbps to look like the original.")
+                                       : qsTr("12 Mbps looks like the original, 6–8 Mbps is fine for sharing.")
+                            return size + " · " + hint
+                        }
                     }
                 }
             }
