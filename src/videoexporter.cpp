@@ -11,11 +11,31 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QLocale>
+#include <QSettings>
+#include <QFile>
+
+static const char *VideoCodecSettingsKey = "export/videoCodec";
+static const char *VideoBitrateSettingsKey = "export/videoBitrateMbps";
+
+// Steam writes the codec into the manifest, e.g. codecs="hev1.2.4.L123.B0"
+static bool isHevcManifest(const QString &mpdPath)
+{
+    QFile file(mpdPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return false;
+    }
+    static const QRegularExpression hevcRe(QStringLiteral("codecs=\"(hev1|hvc1)\\."));
+    return hevcRe.match(QString::fromUtf8(file.readAll())).hasMatch();
+}
+
+#define EXPORT_SETTINGS QStringLiteral("BLumia"), QStringLiteral("PineappleSteamRecordingExporter")
 
 VideoExporter::VideoExporter(QObject *parent)
     : QObject(parent)
     , m_isExporting(false)
     , m_progress(0)
+    , m_videoCodec(CopyStream)
+    , m_videoBitrateMbps(30)
     , m_ffmpegProcess(new QProcess(this))
     , m_progressTimer(new QTimer(this))
     , m_startTime(0)
@@ -29,6 +49,14 @@ VideoExporter::VideoExporter(QObject *parent)
     
     // Set default ffmpeg path (assume it's in PATH)
     m_ffmpegPath = "ffmpeg";
+
+    // Restore the last used export format
+    const QSettings settings(EXPORT_SETTINGS);
+    const int codec = settings.value(VideoCodecSettingsKey, int(CopyStream)).toInt();
+    if (codec == H264Software || (codec == H264Hardware && hardwareEncodingSupported())) {
+        m_videoCodec = VideoCodec(codec);
+    }
+    m_videoBitrateMbps = qBound(1, settings.value(VideoBitrateSettingsKey, 30).toInt(), 200);
     
     // Setup progress timer
     m_progressTimer->setInterval(1000); // Update every second
@@ -66,6 +94,35 @@ void VideoExporter::setFfmpegPath(const QString &path)
     if (m_ffmpegPath != path) {
         m_ffmpegPath = path;
         emit ffmpegPathChanged();
+    }
+}
+
+bool VideoExporter::hardwareEncodingSupported() const
+{
+#ifdef Q_OS_LINUX
+    // VAAPI needs a DRM render node; inside the Flatpak this requires the dri device permission
+    return !QDir(QStringLiteral("/dev/dri")).entryList({QStringLiteral("renderD*")}, QDir::System).isEmpty();
+#else
+    return false;
+#endif
+}
+
+void VideoExporter::setVideoCodec(VideoCodec codec)
+{
+    if (m_videoCodec != codec) {
+        m_videoCodec = codec;
+        QSettings(EXPORT_SETTINGS).setValue(VideoCodecSettingsKey, int(codec));
+        emit videoCodecChanged();
+    }
+}
+
+void VideoExporter::setVideoBitrateMbps(int mbps)
+{
+    mbps = qBound(1, mbps, 200);
+    if (m_videoBitrateMbps != mbps) {
+        m_videoBitrateMbps = mbps;
+        QSettings(EXPORT_SETTINGS).setValue(VideoBitrateSettingsKey, mbps);
+        emit videoBitrateMbpsChanged();
     }
 }
 
@@ -427,12 +484,45 @@ void VideoExporter::setupExportProcess(const QString &inputMpdPath, const QStrin
 QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, const QString &outputPath) const
 {
     QStringList args;
-    
+
+    if (m_videoCodec == H264Hardware) {
+        // Decode on the GPU as well, so frames never leave video memory. If the
+        // GPU can't decode the input, FFmpeg falls back to software decoding and
+        // the hwupload filter moves those frames to the GPU for encoding.
+        args << "-init_hw_device" << "vaapi=va";
+        args << "-hwaccel" << "vaapi" << "-hwaccel_device" << "va";
+        args << "-hwaccel_output_format" << "vaapi";
+        args << "-filter_hw_device" << "va";
+    }
+
     // Input file
     args << "-i" << inputMpdPath;
-    
-    // Fast copy mode - direct stream copy with optimizations
-    args << "-c" << "copy";
+
+    const QString bitrate = QStringLiteral("%1M").arg(m_videoBitrateMbps);
+    switch (m_videoCodec) {
+    case H264Hardware:
+        // Steam's own exporter only looks for NVENC when re-encoding on Linux,
+        // so this is the way to get a widely playable file on AMD/Intel GPUs
+        args << "-vf" << "format=nv12|vaapi,hwupload";
+        args << "-c:v" << "h264_vaapi" << "-b:v" << bitrate << "-maxrate" << bitrate;
+        args << "-c:a" << "copy";
+        break;
+    case H264Software:
+        args << "-c:v" << "libx264" << "-preset" << "veryfast";
+        args << "-b:v" << bitrate << "-maxrate" << bitrate << "-bufsize" << QStringLiteral("%1M").arg(m_videoBitrateMbps * 2);
+        args << "-pix_fmt" << "yuv420p";
+        args << "-c:a" << "copy";
+        break;
+    case CopyStream:
+    default:
+        // Fast copy mode - direct stream copy with optimizations
+        args << "-c" << "copy";
+        if (isHevcManifest(inputMpdPath)) {
+            // Steam tags HEVC as hev1, which e.g. Safari/QuickTime refuse to play
+            args << "-tag:v" << "hvc1";
+        }
+        break;
+    }
     
     // Fix timestamps and seeking issues without re-encoding
     args << "-avoid_negative_ts" << "make_zero";   // Fix negative timestamps

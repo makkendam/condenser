@@ -21,9 +21,19 @@ class VideoExporter : public QObject
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
     Q_PROPERTY(QString defaultExportPath READ defaultExportPath WRITE setDefaultExportPath NOTIFY defaultExportPathChanged)
     Q_PROPERTY(QString ffmpegPath READ ffmpegPath WRITE setFfmpegPath NOTIFY ffmpegPathChanged)
+    Q_PROPERTY(VideoCodec videoCodec READ videoCodec WRITE setVideoCodec NOTIFY videoCodecChanged)
+    Q_PROPERTY(int videoBitrateMbps READ videoBitrateMbps WRITE setVideoBitrateMbps NOTIFY videoBitrateMbpsChanged)
+    Q_PROPERTY(bool hardwareEncodingSupported READ hardwareEncodingSupported CONSTANT)
 
 public:
-    
+    // How the video stream is written to the exported MP4. Audio is always copied.
+    enum VideoCodec {
+        CopyStream = 0,   // Keep Steam's original stream (H.264 or HEVC), no re-encoding
+        H264Hardware = 1, // Re-encode to H.264 on the GPU (VAAPI, Linux only)
+        H264Software = 2, // Re-encode to H.264 on the CPU (libx264)
+    };
+    Q_ENUM(VideoCodec)
+
     explicit VideoExporter(QObject *parent = nullptr);
     ~VideoExporter() override;
 
@@ -35,10 +45,15 @@ public:
     QString lastError() const { return m_lastError; }
     QString defaultExportPath() const { return m_defaultExportPath; }
     QString ffmpegPath() const { return m_ffmpegPath; }
+    VideoCodec videoCodec() const { return m_videoCodec; }
+    int videoBitrateMbps() const { return m_videoBitrateMbps; }
+    bool hardwareEncodingSupported() const;
 
     // Property setters
     void setDefaultExportPath(const QString &path);
     void setFfmpegPath(const QString &path);
+    void setVideoCodec(VideoCodec codec);
+    void setVideoBitrateMbps(int mbps);
 
     // Export methods
     Q_INVOKABLE bool exportClipSegment(RecordingClip *clip, int segmentIndex, const QString &outputPath = QString());
@@ -64,6 +79,8 @@ signals:
     void lastErrorChanged();
     void defaultExportPathChanged();
     void ffmpegPathChanged();
+    void videoCodecChanged();
+    void videoBitrateMbpsChanged();
     void exportStarted(const QString &outputPath);
     void exportCompleted(const QString &outputPath);
     void exportFailed(const QString &error);
@@ -110,6 +127,8 @@ private:
     QString m_lastError;
     QString m_defaultExportPath;
     QString m_ffmpegPath;
+    VideoCodec m_videoCodec;
+    int m_videoBitrateMbps;
     
     // Process management
     QProcess *m_ffmpegProcess;

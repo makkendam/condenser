@@ -350,6 +350,65 @@ Page {
                         }
                     }
 
+                    // Export format
+                    RowLayout {
+                        Layout.fillWidth: true
+                        visible: !videoExporter || !videoExporter.isExporting
+
+                        Label {
+                            text: qsTr("Format:")
+                        }
+
+                        ComboBox {
+                            id: videoCodecCombo
+                            Layout.fillWidth: true
+                            textRole: "text"
+                            valueRole: "value"
+                            model: {
+                                var options = [
+                                    { value: VideoExporter.CopyStream, text: qsTr("Original (no re-encoding, fastest)") }
+                                ]
+                                if (videoExporter && videoExporter.hardwareEncodingSupported) {
+                                    options.push({ value: VideoExporter.H264Hardware, text: qsTr("H.264, GPU encoding (VAAPI)") })
+                                }
+                                options.push({ value: VideoExporter.H264Software, text: qsTr("H.264, CPU encoding (slow)") })
+                                return options
+                            }
+                            Component.onCompleted: {
+                                if (videoExporter) {
+                                    currentIndex = indexOfValue(videoExporter.videoCodec)
+                                }
+                            }
+                            onActivated: {
+                                if (videoExporter) {
+                                    videoExporter.videoCodec = currentValue
+                                }
+                            }
+
+                            ToolTip.visible: hovered
+                            ToolTip.delay: 500
+                            ToolTip.text: qsTr("Steam may record in HEVC (H.265), which not every player or website supports. Re-encode to H.264 for the widest compatibility.")
+                        }
+
+                        Label {
+                            text: qsTr("Bitrate (Mbps):")
+                            visible: videoExporter && videoExporter.videoCodec !== VideoExporter.CopyStream
+                        }
+
+                        SpinBox {
+                            from: 1
+                            to: 200
+                            editable: true
+                            visible: videoExporter && videoExporter.videoCodec !== VideoExporter.CopyStream
+                            value: videoExporter ? videoExporter.videoBitrateMbps : 30
+                            onValueModified: {
+                                if (videoExporter) {
+                                    videoExporter.videoBitrateMbps = value
+                                }
+                            }
+                        }
+                    }
+
                     // Export buttons
                     RowLayout {
                         Layout.fillWidth: true
