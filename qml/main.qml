@@ -21,7 +21,7 @@ ApplicationWindow {
     Material.accent: "#2e2e2e"
     
     // Global properties
-    property string currentPage: "systemCheck"
+    property string currentPage: "editor"
     property var selectedClip: null
     property int selectedSegmentIndex: -1
     property var selectedExportedVideo: null
@@ -31,6 +31,7 @@ ApplicationWindow {
         if (systemChecker && systemChecker.isSteamGameMode) {
             mainWindow.showFullScreen()
         }
+        systemChecker.startSystemCheck()
     }
     
     // Page stack for navigation
@@ -38,13 +39,35 @@ ApplicationWindow {
         id: pageStack
         anchors.fill: parent
         
-        initialItem: SystemCheckPage {
-            id: systemCheckPage
-            
+        // The editor is the main screen; the system check runs in the
+        // background and only shows up when something is missing
+        initialItem: editorComponent
+    }
+
+    Component {
+        id: systemCheckComponent
+
+        SystemCheckPage {
             onSystemCheckPassed: {
-                // The editor is the main screen
-                pageStack.push(editorComponent)
+                pageStack.pop()
                 currentPage = "editor"
+            }
+        }
+    }
+
+    Connections {
+        target: systemChecker
+
+        function onSystemCheckCompleted() {
+            if (pageStack.depth > 1 && currentPage === "systemCheck") {
+                return // The visible check page handles rechecks itself
+            }
+            if (systemChecker.allChecksPass) {
+                recordingManager.steamPath = systemChecker.steamPath
+                recordingManager.startScan()
+            } else {
+                pageStack.push(systemCheckComponent)
+                currentPage = "systemCheck"
             }
         }
     }
@@ -184,9 +207,9 @@ ApplicationWindow {
     // Global shortcuts
     Shortcut {
         sequences: [StandardKey.Back]
-        enabled: pageStack.depth > 2
+        enabled: pageStack.depth > 1 && currentPage !== "systemCheck"
         onActivated: {
-            if (pageStack.depth > 2) {
+            if (pageStack.depth > 1) {
                 pageStack.pop()
                 updateCurrentPage()
             }
@@ -195,9 +218,9 @@ ApplicationWindow {
     
     Shortcut {
         sequences: ["Escape"]
-        enabled: pageStack.depth > 2
+        enabled: pageStack.depth > 1 && currentPage !== "systemCheck"
         onActivated: {
-            if (pageStack.depth > 2) {
+            if (pageStack.depth > 1) {
                 pageStack.pop()
                 updateCurrentPage()
             }
@@ -223,51 +246,15 @@ ApplicationWindow {
     function updateCurrentPage() {
         switch (pageStack.depth) {
         case 1:
-            currentPage = "systemCheck"
-            break
-        case 2:
             currentPage = "editor"
             break
+        case 2:
+            currentPage = "exportedVideos"
+            break
         case 3:
-            if (selectedClip && selectedClip.segmentCount > 1) {
-                currentPage = "clipSelection"
-            } else if (selectedClip) {
-                currentPage = "previewAndExport"
-            } else {
-                currentPage = "exportedVideos"
-            }
-            break
-        case 4:
-            if (selectedExportedVideo) {
-                currentPage = "videoPreview"
-            } else {
-                currentPage = "previewAndExport"
-            }
+            currentPage = "videoPreview"
             break
         }
-    }
-    
-    function goToRecordingList() {
-        while (pageStack.depth > 2) {
-            pageStack.pop()
-        }
-        if (pageStack.depth === 1) {
-            pageStack.push(recordingListComponent)
-        }
-        currentPage = "recordingList"
-        selectedClip = null
-        selectedSegmentIndex = -1
-        selectedExportedVideo = null
-    }
-    
-    function goToSystemCheck() {
-        while (pageStack.depth > 1) {
-            pageStack.pop()
-        }
-        currentPage = "systemCheck"
-        selectedClip = null
-        selectedSegmentIndex = -1
-        selectedExportedVideo = null
     }
     
     // Handle window close

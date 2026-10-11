@@ -609,8 +609,8 @@ Page {
                 visible: sourceList.count === 0
                 horizontalAlignment: Text.AlignHCenter
                 color: Material.hintTextColor
-                text: recordingManager && recordingManager.isScanning
-                      ? qsTr("Scanning for recordings…")
+                text: recordingManager && (recordingManager.isScanning || recordingManager.gameRecordingsPath === "")
+                      ? qsTr("Looking for recordings…")
                       : sourceTabs.currentIndex === 0
                         ? qsTr("No sessions found.\nTurn on background recording in Steam's Game Recording settings.")
                         : qsTr("No clips saved in Steam yet.")
