@@ -35,6 +35,9 @@ public:
     // yet); also asks for the exact one if it doesn't exist
     Q_INVOKABLE QUrl thumbnailAt(qint64 positionMs);
 
+    // Delete cached thumbnails of recordings that no longer exist
+    static void pruneCache();
+
 signals:
     void segmentPathChanged();
     void revisionChanged();

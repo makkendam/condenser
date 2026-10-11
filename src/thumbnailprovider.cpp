@@ -15,6 +15,21 @@ const int MaxParallel = 2;
 const qint64 BackgroundIntervalMs = 12000;
 // Thumbnail width; height follows the aspect ratio
 const char *ThumbnailScale = "scale=240:-2";
+// File in each cache directory naming the segment it belongs to
+const char *SourceFileName = "source";
+
+QString cacheRoot()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/thumbnails");
+}
+
+// The Steam recordings directory a segment lives in: the part before
+// /video/bg_... or /clips/clip_.../video/...
+QString recordingsRoot(const QString &segmentPath)
+{
+    static const QRegularExpression rootRe(QStringLiteral("^(.*)/(video|clips)/[^/]+"));
+    return rootRe.match(segmentPath).captured(1);
+}
 }
 
 ThumbnailProvider::ThumbnailProvider(QObject *parent)
@@ -43,9 +58,12 @@ void ThumbnailProvider::setSegmentPath(const QString &path)
     // One cache directory per segment; clips have their own chunk numbering,
     // so key on the full path rather than the directory name
     const QByteArray key = QCryptographicHash::hash(m_segmentPath.toUtf8(), QCryptographicHash::Sha1).toHex().left(16);
-    m_cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
-                 + QStringLiteral("/thumbnails/") + QString::fromLatin1(key);
+    m_cacheDir = cacheRoot() + QLatin1Char('/') + QString::fromLatin1(key);
     QDir().mkpath(m_cacheDir);
+    QFile source(m_cacheDir + QLatin1Char('/') + QLatin1String(SourceFileName));
+    if (!source.exists() && source.open(QIODevice::WriteOnly)) {
+        source.write(m_segmentPath.toUtf8());
+    }
 
     readChunkLayout();
 
@@ -113,6 +131,29 @@ void ThumbnailProvider::readChunkLayout()
     const qint64 startNumber = attribute("startNumber");
     if (startNumber > 0) {
         m_firstChunk = int(startNumber);
+    }
+}
+
+void ThumbnailProvider::pruneCache()
+{
+    QDir root(cacheRoot());
+    const QStringList dirs = root.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const QString &name : dirs) {
+        QDir dir(root.absoluteFilePath(name));
+        QFile source(dir.absoluteFilePath(QLatin1String(SourceFileName)));
+        if (source.open(QIODevice::ReadOnly)) {
+            const QString segmentPath = QString::fromUtf8(source.readAll());
+            source.close();
+            if (QFileInfo::exists(segmentPath)) {
+                continue;
+            }
+            // Recordings folder itself unreachable (e.g. unmounted disk): keep the cache
+            const QString recordings = recordingsRoot(segmentPath);
+            if (recordings.isEmpty() || !QFileInfo::exists(recordings)) {
+                continue;
+            }
+        }
+        dir.removeRecursively();
     }
 }
 

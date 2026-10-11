@@ -63,6 +63,9 @@ int main(int argc, char *argv[])
     // Set up QML import paths
     engine.addImportPath("qrc:/");
 
+    // Thumbnails of recordings Steam has since deleted
+    ThumbnailProvider::pruneCache();
+
     // Load the main QML file
     const QUrl url(QStringLiteral("qrc:/CondenserApp/qml/main.qml"));
 
