@@ -195,6 +195,7 @@ Page {
                 
                 // Loading indicator
                 BusyIndicator {
+                    Material.accent: "#8ab4f8"
                     visible: exportedVideoManager && exportedVideoManager.isScanning
                     anchors.centerIn: parent
                     running: visible
@@ -205,6 +206,7 @@ Page {
     
     // Delete confirmation dialogs
     Dialog {
+        Material.accent: "#8ab4f8"
         id: deleteVideoDialog
         
         property int videoIndex: -1
@@ -229,6 +231,7 @@ Page {
     }
     
     Dialog {
+        Material.accent: "#8ab4f8"
         id: deleteAllDialog
         
         anchors.centerIn: parent

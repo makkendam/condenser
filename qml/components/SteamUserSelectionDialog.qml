@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Dialog {
+    Material.accent: "#8ab4f8"
     id: root
 
     signal userSelected(string userId)

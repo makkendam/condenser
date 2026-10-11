@@ -173,6 +173,7 @@ Page {
                         }
                         
                         Slider {
+                            Material.accent: "#8ab4f8"
                             Layout.fillWidth: true
                             from: 0
                             to: mediaPlayer.duration
@@ -197,6 +198,7 @@ Page {
                         }
                         
                         Slider {
+                            Material.accent: "#8ab4f8"
                             Layout.preferredWidth: 100
                             from: 0
                             to: 1
@@ -228,6 +230,7 @@ Page {
                         }
                         
                         BusyIndicator {
+                            Material.accent: "#8ab4f8"
                             visible: mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
                             running: visible
                             implicitWidth: 24
@@ -331,6 +334,7 @@ Page {
     
     // Delete confirmation dialog
     Dialog {
+        Material.accent: "#8ab4f8"
         id: deleteDialog
         
         anchors.centerIn: parent

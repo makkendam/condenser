@@ -228,6 +228,7 @@ Page {
             }
 
             BusyIndicator {
+                Material.accent: "#8ab4f8"
                 anchors.centerIn: parent
                 running: mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
                 visible: running
@@ -556,6 +557,7 @@ Page {
                 }
 
                 Slider {
+                    Material.accent: "#8ab4f8"
                     Layout.preferredWidth: 90
                     from: 0
                     to: 1
@@ -574,6 +576,7 @@ Page {
 
         // Source recordings
         TabBar {
+            Material.accent: "#8ab4f8"
             id: sourceTabs
             Layout.fillWidth: true
             Layout.topMargin: 4
@@ -612,7 +615,7 @@ Page {
 
                 background: Rectangle {
                     radius: 4
-                    color: row.highlighted ? "#3a3a3a" : (row.hovered ? "#2a2a2a" : "transparent")
+                    color: row.highlighted ? "#1a3d6e" : (row.hovered ? "#2a2a2a" : "transparent")
                     border.color: Material.dividerColor
                     border.width: 1
                 }
@@ -821,6 +824,7 @@ Page {
                 spacing: 4
 
                 ProgressBar {
+                    Material.accent: "#8ab4f8"
                     Layout.fillWidth: true
                     value: videoExporter ? videoExporter.progress / 100.0 : 0
                 }

@@ -61,6 +61,7 @@ Page {
                 }
 
                 BusyIndicator {
+                    Material.accent: "#8ab4f8"
                     anchors.centerIn: parent
                     running: recordingManager ? recordingManager.isScanning : false
                     visible: running
@@ -156,6 +157,7 @@ Page {
                     spacing: 16
 
                     BusyIndicator {
+                        Material.accent: "#8ab4f8"
                         running: true
                         Layout.alignment: Qt.AlignHCenter
                         implicitWidth: 64
@@ -197,6 +199,7 @@ Page {
                 spacing: 8
 
                 TabBar {
+                    Material.accent: "#8ab4f8"
                     id: recordingTabBar
                     Layout.fillWidth: true
 

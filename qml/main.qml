@@ -18,7 +18,9 @@ ApplicationWindow {
     
     Material.theme: Material.Dark
     Material.primary: "#121212"
-    Material.accent: "#d0d0d0"
+    // Dark blue for filled buttons (white text); controls drawn on the dark
+    // background (tabs, sliders, dialogs) override it with a light blue
+    Material.accent: "#1a3d6e"
     
     // Global properties
     property string currentPage: "editor"
@@ -268,6 +270,7 @@ ApplicationWindow {
     
     // Exit confirmation dialog
     Dialog {
+        Material.accent: "#8ab4f8"
         id: confirmExitDialog
         
         anchors.centerIn: parent
@@ -290,6 +293,7 @@ ApplicationWindow {
     }
 
     Dialog {
+        Material.accent: "#8ab4f8"
         id: languageDialog
 
         contentWidth: 220
@@ -320,6 +324,7 @@ ApplicationWindow {
     }
 
     Dialog {
+        Material.accent: "#8ab4f8"
         id: aboutDialog
 
         anchors.centerIn: parent
@@ -411,6 +416,7 @@ ApplicationWindow {
             }
             
             BusyIndicator {
+                Material.accent: "#8ab4f8"
                 visible: (systemChecker && systemChecker.isChecking) ||
                          (recordingManager && recordingManager.isScanning) ||
                          (videoExporter && videoExporter.isExporting) ||
