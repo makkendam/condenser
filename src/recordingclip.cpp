@@ -146,6 +146,32 @@ int RecordingClip::videoBitrateMbps(int segmentIndex) const
     return int(qRound(match.captured(1).toLongLong() / 1000000.0));
 }
 
+QString RecordingClip::videoCodecName(int segmentIndex) const
+{
+    if (segmentIndex < 0 || segmentIndex >= m_segments.size()) {
+        return QString();
+    }
+
+    QFile mpdFile(QDir(m_segments.at(segmentIndex)).absoluteFilePath("session.mpd"));
+    if (!mpdFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QString();
+    }
+
+    // e.g. codecs="avc1.640c28" or codecs="hev1.2.4.L123.B0"
+    static const QRegularExpression codecsRe(QStringLiteral(R"re(codecs="(avc1|avc3|hev1|hvc1|av01)\.)re"));
+    const QString codec = codecsRe.match(QString::fromUtf8(mpdFile.readAll())).captured(1);
+    if (codec.startsWith(QLatin1String("avc"))) {
+        return QStringLiteral("H.264");
+    }
+    if (codec.startsWith(QLatin1String("h"))) {
+        return QStringLiteral("HEVC");
+    }
+    if (codec == QLatin1String("av01")) {
+        return QStringLiteral("AV1");
+    }
+    return QString();
+}
+
 QUrl RecordingClip::getSegmentMpdUrl(int segmentIndex) const
 {
     QString mpdPath = getSegmentMpdPath(segmentIndex);

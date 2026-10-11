@@ -62,6 +62,8 @@ public:
     Q_INVOKABLE QUrl getSegmentMpdUrl(int segmentIndex) const;
     // Video bitrate Steam recorded the segment with, in whole Mbps (0 if unknown)
     Q_INVOKABLE int videoBitrateMbps(int segmentIndex) const;
+    // Display name of the recorded video codec ("H.264", "HEVC", "AV1"), empty if unknown
+    Q_INVOKABLE QString videoCodecName(int segmentIndex) const;
     Q_INVOKABLE void refreshGameInfo(const QString &steamPath);
     
     // Static factory methods

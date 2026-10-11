@@ -62,7 +62,8 @@ VideoExporter::VideoExporter(QObject *parent)
     // Restore the last used export format
     const QSettings settings(EXPORT_SETTINGS);
     const int codec = settings.value(VideoCodecSettingsKey, int(CopyStream)).toInt();
-    if (codec == H264Software || (codec == H264Hardware && hardwareEncodingSupported())) {
+    const bool hardware = codec == H264Hardware || codec == HevcHardware || codec == Av1Hardware;
+    if (codec == H264Software || (hardware && hardwareEncodingSupported())) {
         m_videoCodec = VideoCodec(codec);
     }
     m_videoBitrateMbps = qBound(1, settings.value(VideoBitrateSettingsKey, 30).toInt(), 200);
@@ -486,7 +487,8 @@ QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, con
 {
     QStringList args;
 
-    if (m_videoCodec == H264Hardware) {
+    const bool hardware = m_videoCodec == H264Hardware || m_videoCodec == HevcHardware || m_videoCodec == Av1Hardware;
+    if (hardware) {
         // Decode on the GPU as well, so frames never leave video memory. If the
         // GPU can't decode the input, FFmpeg falls back to software decoding and
         // the hwupload filter moves those frames to the GPU for encoding.
@@ -513,12 +515,21 @@ QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, con
     const QString bitrate = QStringLiteral("%1M").arg(m_exportBitrateMbps);
     switch (m_videoCodec) {
     case H264Hardware:
+    case HevcHardware:
+    case Av1Hardware: {
         // Steam's own exporter only looks for NVENC when re-encoding on Linux,
-        // so this is the way to get a widely playable file on AMD/Intel GPUs
+        // so this is the way to re-encode on AMD/Intel GPUs
+        const char *encoder = m_videoCodec == HevcHardware ? "hevc_vaapi"
+                            : m_videoCodec == Av1Hardware  ? "av1_vaapi"
+                                                           : "h264_vaapi";
         args << "-vf" << "format=nv12|vaapi,hwupload";
-        args << "-c:v" << "h264_vaapi" << "-b:v" << bitrate << "-maxrate" << bitrate;
+        args << "-c:v" << encoder << "-b:v" << bitrate << "-maxrate" << bitrate;
+        if (m_videoCodec == HevcHardware) {
+            args << "-tag:v" << "hvc1";
+        }
         args << "-c:a" << "copy";
         break;
+    }
     case H264Software:
         args << "-c:v" << "libx264" << "-preset" << "veryfast";
         args << "-b:v" << bitrate << "-maxrate" << bitrate << "-bufsize" << QStringLiteral("%1M").arg(m_exportBitrateMbps * 2);

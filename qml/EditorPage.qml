@@ -812,20 +812,28 @@ Page {
                 Label { text: qsTr("Format") }
                 ComboBox {
                     id: codecCombo
+                    Material.accent: "#8ab4f8"
                     Layout.fillWidth: true
                     textRole: "text"
                     valueRole: "value"
                     model: {
+                        var source = root.loadedClip ? root.loadedClip.videoCodecName(root.segmentIndex) : ""
                         var options = [
-                            { value: VideoExporter.CopyStream, text: qsTr("Original (no re-encoding, fastest)") }
+                            { value: VideoExporter.CopyStream,
+                              text: source ? qsTr("Original %1 (no re-encoding, fastest)").arg(source)
+                                           : qsTr("Original (no re-encoding, fastest)") }
                         ]
                         if (videoExporter && videoExporter.hardwareEncodingSupported) {
-                            options.push({ value: VideoExporter.H264Hardware, text: qsTr("H.264, GPU encoding (VAAPI)") })
+                            options.push({ value: VideoExporter.H264Hardware, text: qsTr("H.264, GPU encoding (plays everywhere)") })
+                            options.push({ value: VideoExporter.HevcHardware, text: qsTr("HEVC, GPU encoding (smaller)") })
+                            options.push({ value: VideoExporter.Av1Hardware, text: qsTr("AV1, GPU encoding (smallest)") })
                         }
                         options.push({ value: VideoExporter.H264Software, text: qsTr("H.264, CPU encoding (slow)") })
                         return options
                     }
                     Component.onCompleted: currentIndex = indexOfValue(videoExporter.videoCodec)
+                    // A new recording rebuilds the list (codec name); keep the chosen format
+                    onModelChanged: currentIndex = Math.max(0, indexOfValue(videoExporter.videoCodec))
                     onActivated: videoExporter.videoCodec = currentValue
                 }
 

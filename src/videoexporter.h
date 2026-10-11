@@ -31,6 +31,8 @@ public:
         CopyStream = 0,   // Keep Steam's original stream (H.264 or HEVC), no re-encoding
         H264Hardware = 1, // Re-encode to H.264 on the GPU (VAAPI, Linux only)
         H264Software = 2, // Re-encode to H.264 on the CPU (libx264)
+        HevcHardware = 3, // Re-encode to HEVC on the GPU (VAAPI)
+        Av1Hardware = 4,  // Re-encode to AV1 on the GPU (VAAPI, needs a recent GPU)
     };
     Q_ENUM(VideoCodec)
 
