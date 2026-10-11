@@ -64,6 +64,12 @@ qt_add_qml_module(Condenser
 qt_add_resources(Condenser "icons"
     FILES
         qml/app_icon.png
+        qml/icons/play.svg
+        qml/icons/pause.svg
+        qml/icons/back-10.svg
+        qml/icons/forward-10.svg
+        qml/icons/back-1.svg
+        qml/icons/forward-1.svg
 )
 
 # Link Qt libraries

@@ -141,8 +141,10 @@ Page {
     Shortcut { sequence: "Space"; enabled: !exportPopup.opened; onActivated: root.togglePlayback() }
     Shortcut { sequence: "I"; enabled: !exportPopup.opened && root.mediaReady; onActivated: root.setStart() }
     Shortcut { sequence: "O"; enabled: !exportPopup.opened && root.mediaReady; onActivated: root.setEnd() }
-    Shortcut { sequence: "Left"; enabled: !exportPopup.opened; onActivated: root.seekBy(-5000) }
-    Shortcut { sequence: "Right"; enabled: !exportPopup.opened; onActivated: root.seekBy(5000) }
+    Shortcut { sequence: "Left"; enabled: !exportPopup.opened; onActivated: root.seekBy(-1000) }
+    Shortcut { sequence: "Right"; enabled: !exportPopup.opened; onActivated: root.seekBy(1000) }
+    Shortcut { sequence: "Shift+Left"; enabled: !exportPopup.opened; onActivated: root.seekBy(-10000) }
+    Shortcut { sequence: "Shift+Right"; enabled: !exportPopup.opened; onActivated: root.seekBy(10000) }
 
     header: ToolBar {
         RowLayout {
@@ -524,36 +526,21 @@ Page {
             }
         }
 
-        // Editor bar
+        // Editor bar: clip controls left, transport centered under the
+        // timeline like Steam's player, volume and export right
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: editorRow.implicitHeight + 12
+            Layout.preferredHeight: Math.max(transport.implicitHeight, clipRow.implicitHeight, outputRow.implicitHeight) + 8
             color: "#2a2a30"
             radius: 4
 
             RowLayout {
-                id: editorRow
-                anchors.fill: parent
+                id: clipRow
+                anchors.left: parent.left
                 anchors.leftMargin: 8
-                anchors.rightMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                width: transport.x - 16 - anchors.leftMargin
                 spacing: 6
-
-                ToolButton {
-                    icon.name: mediaPlayer.playbackState === MediaPlayer.PlayingState ? "media-playback-pause" : "media-playback-start"
-                    enabled: root.loadedClip !== null
-                    onClicked: root.togglePlayback()
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Play/Pause (Space)")
-                }
-
-                Label {
-                    text: root.formatTime(timeline.shownPosition) + " / " + root.formatTime(mediaPlayer.duration)
-                    font.pixelSize: 12
-                    font.features: { "tnum": 1 }
-                    Layout.minimumWidth: 110
-                }
-
-                ToolSeparator {}
 
                 Button {
                     text: qsTr("Start Clip")
@@ -617,8 +604,76 @@ Page {
                         root.clearRange()
                     }
                 }
+            }
 
-                ToolSeparator {}
+            ColumnLayout {
+                id: transport
+                anchors.centerIn: parent
+                spacing: -6
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 2
+
+                    ToolButton {
+                        icon.source: "qrc:/qml/icons/back-1.svg"
+                        icon.width: 22; icon.height: 22
+                        enabled: root.mediaReady
+                        onClicked: root.seekBy(-1000)
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Back 1 second (Left)")
+                    }
+                    ToolButton {
+                        icon.source: "qrc:/qml/icons/back-10.svg"
+                        icon.width: 28; icon.height: 28
+                        enabled: root.mediaReady
+                        onClicked: root.seekBy(-10000)
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Back 10 seconds (Shift+Left)")
+                    }
+                    ToolButton {
+                        icon.source: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                                     ? "qrc:/qml/icons/pause.svg" : "qrc:/qml/icons/play.svg"
+                        icon.width: 38; icon.height: 38
+                        enabled: root.loadedClip !== null
+                        onClicked: root.togglePlayback()
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Play/Pause (Space)")
+                    }
+                    ToolButton {
+                        icon.source: "qrc:/qml/icons/forward-10.svg"
+                        icon.width: 28; icon.height: 28
+                        enabled: root.mediaReady
+                        onClicked: root.seekBy(10000)
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Forward 10 seconds (Shift+Right)")
+                    }
+                    ToolButton {
+                        icon.source: "qrc:/qml/icons/forward-1.svg"
+                        icon.width: 22; icon.height: 22
+                        enabled: root.mediaReady
+                        onClicked: root.seekBy(1000)
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Forward 1 second (Right)")
+                    }
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.bottomMargin: 4
+                    text: root.formatTime(timeline.shownPosition) + " / " + root.formatTime(mediaPlayer.duration)
+                    font.pixelSize: 12
+                    font.features: { "tnum": 1 }
+                    color: Material.hintTextColor
+                }
+            }
+
+            RowLayout {
+                id: outputRow
+                anchors.right: parent.right
+                anchors.rightMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
 
                 ToolButton {
                     icon.name: audioOutput.muted ? "audio-volume-muted" : "audio-volume-high"
