@@ -8,9 +8,9 @@ ApplicationWindow {
     id: mainWindow
     
     visible: true
-    // Tall enough to show the whole preview & export page without scrolling
-    width: 1280
-    height: 1000
+    // Most of the screen: a big player and still room for a good part of the session list
+    width: Math.min(1700, Math.round(Screen.desktopAvailableWidth * 0.85))
+    height: Math.min(1500, Math.round(Screen.desktopAvailableHeight * 0.92))
     minimumWidth: 800
     minimumHeight: 600
     
@@ -322,63 +322,6 @@ ApplicationWindow {
                 onClicked: {
                     Qt.openUrlExternally("https://link.blumia.net/pineapple-apps-donate")
                 }
-            }
-        }
-    }
-    
-    // Status bar
-    footer: ToolBar {
-        height: 30
-        
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 8
-            
-            Label {
-                text: {
-                    switch (currentPage) {
-                    case "systemCheck":
-                        return qsTr("System Check")
-                    case "editor":
-                        return recordingManager && recordingManager.isScanning ? qsTr("Scanning for recordings…") : ""
-                    case "recordingList":
-                        return qsTr("Recording List") + 
-                               (recordingManager ? " (" + recordingManager.clipCount + " clips)" : "")
-                    case "clipSelection":
-                        return qsTr("Clip Selection")
-                    case "previewAndExport":
-                        return qsTr("Preview & Export")
-                    case "exportedVideos":
-                        return qsTr("Exported Videos") + 
-                               (exportedVideoManager ? " (" + exportedVideoManager.videoCount + " videos)" : "")
-                    case "videoPreview":
-                        return selectedExportedVideo ? selectedExportedVideo.displayName : qsTr("Video Preview")
-                    default:
-                        return ""
-                    }
-                }
-                font.pixelSize: 12
-                color: Material.foreground
-            }
-            
-            Item { Layout.fillWidth: true }
-            
-            Label {
-                visible: videoExporter && videoExporter.isExporting
-                text: videoExporter ? videoExporter.currentOperation + " (" + videoExporter.progress + "%)" : ""
-                font.pixelSize: 12
-                color: Material.foreground
-            }
-            
-            BusyIndicator {
-                Material.accent: "#8ab4f8"
-                visible: (systemChecker && systemChecker.isChecking) ||
-                         (recordingManager && recordingManager.isScanning) ||
-                         (videoExporter && videoExporter.isExporting) ||
-                         (exportedVideoManager && exportedVideoManager.isScanning)
-                running: visible
-                implicitWidth: 20
-                implicitHeight: 20
             }
         }
     }
