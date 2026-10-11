@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# AppImage build script for Pineapple Steam Recording Exporter
+# AppImage build script for Condenser
 set -e
 
 # Configuration
-APP_NAME="PineappleSteamRecordingExporter"
-APP_ID="net.blumia.pineapple-steam-recording-exporter"
+APP_NAME="Condenser"
+APP_ID="top.makkendam.Condenser"
 BUILD_DIR="build-appimage"
 INSTALL_DIR="AppDir"
-DESKTOP_FILE_PATH="packaging/linux/net.blumia.pineapple-steam-recording-exporter.desktop"
+DESKTOP_FILE_PATH="packaging/linux/top.makkendam.Condenser.desktop"
 
 # Colors for output
 RED='\033[0;31m'

@@ -1,8 +1,8 @@
-app-id: net.blumia.pineapple-steam-recording-exporter
+app-id: top.makkendam.Condenser
 runtime: org.kde.Platform
 runtime-version: '6.11'
 sdk: org.kde.Sdk
-command: PineappleSteamRecordingExporter
+command: Condenser
 
 finish-args:
   # X11 and Wayland support
@@ -24,7 +24,7 @@ finish-args:
   - --talk-name=org.freedesktop.FileManager1
 
 modules:
-  - name: PineappleSteamRecordingExporter
+  - name: Condenser
     buildsystem: cmake-ninja
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo

@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
-import net.blumia.pineapple.streamrecordingexporter
+import Condenser
 import "components"
 
 // Main screen: a big player with a clip editor, and the recordings to pick

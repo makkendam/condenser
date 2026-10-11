@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
-import net.blumia.pineapple.streamrecordingexporter
+import Condenser
 
 ApplicationWindow {
     id: mainWindow
@@ -14,7 +14,7 @@ ApplicationWindow {
     minimumWidth: 800
     minimumHeight: 600
 
-    title: qsTr("Pineapple Steam Recording Exporter")
+    title: qsTr("Condenser")
 
     Material.theme: Material.Dark
     Material.primary: "#121212"
@@ -112,31 +112,22 @@ ApplicationWindow {
 
         anchors.centerIn: parent
         modal: true
-        title: qsTr("About")
+        title: qsTr("About Condenser")
 
         Label {
             text: `
-- Source Code: [GitHub](https://github.com/BLumia/pineapple-steam-recording-exporter)
-- Copyright: 2026 [Gary "BLumia" Wang](https://github.com/BLumia/)
+Condenser turns Steam game recordings into clips.
+
+- Based on [Pineapple Steam Recording Exporter](https://github.com/BLumia/pineapple-steam-recording-exporter), copyright 2026 [Gary "BLumia" Wang](https://github.com/BLumia/)
+- Changes copyright 2026 makkendam
 - License: [GPL-3.0-only](https://spdx.org/licenses/GPL-3.0-only.html)
-- Donate: [Ko-fi](https://ko-fi.com/blumia)
 `
             textFormat: TextEdit.MarkdownText
-            onLinkActivated: {
+            onLinkActivated: function(link) {
                 Qt.openUrlExternally(link)
             }
         }
 
         standardButtons: Dialog.Ok
-        footer: DialogButtonBox {
-            Button {
-                flat: true
-                text: qsTr("Donate")
-                DialogButtonBox.buttonRole: DialogButtonBox.Open
-                onClicked: {
-                    Qt.openUrlExternally("https://link.blumia.net/pineapple-apps-donate")
-                }
-            }
-        }
     }
 }

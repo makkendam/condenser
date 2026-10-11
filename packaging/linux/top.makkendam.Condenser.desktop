@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Condenser
+GenericName=Steam Game Recording Clipper
+Comment=Cut clips from Steam game recordings and export them to MP4
+Exec=Condenser
+Icon=top.makkendam.Condenser
+Terminal=false
+StartupNotify=true
+Categories=AudioVideo;Video;Qt;Game;
+Keywords=steam;recording;clip;video;export;mp4;game;
+MimeType=application/dash+xml;
+StartupWMClass=Condenser

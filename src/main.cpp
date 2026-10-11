@@ -26,7 +26,9 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     // Set application properties
-    app.setApplicationName("Pineapple Steam Recording Exporter");
+    app.setApplicationName("Condenser");
+    // Matches the .desktop file so Wayland taskbars show the right icon
+    app.setDesktopFileName(QStringLiteral("top.makkendam.Condenser"));
     app.setApplicationVersion(QStringLiteral(PSRE_VERSION));
 
     // Set application icon
@@ -41,11 +43,11 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     // Register C++ types for QML
-    qmlRegisterType<SteamRecordingManager>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "SteamRecordingManager");
-    qmlRegisterType<SystemChecker>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "SystemChecker");
-    qmlRegisterType<VideoExporter>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "VideoExporter");
-    qmlRegisterType<RecordingClip>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "RecordingClip");
-    qmlRegisterType<RecordingFilterModel>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "RecordingFilterModel");
+    qmlRegisterType<SteamRecordingManager>("Condenser", 1, 0, "SteamRecordingManager");
+    qmlRegisterType<SystemChecker>("Condenser", 1, 0, "SystemChecker");
+    qmlRegisterType<VideoExporter>("Condenser", 1, 0, "VideoExporter");
+    qmlRegisterType<RecordingClip>("Condenser", 1, 0, "RecordingClip");
+    qmlRegisterType<RecordingFilterModel>("Condenser", 1, 0, "RecordingFilterModel");
 
     // Create and expose global instances to QML
     SystemChecker systemChecker;
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
     engine.addImportPath("qrc:/");
 
     // Load the main QML file
-    const QUrl url(QStringLiteral("qrc:/net/blumia/pineapple/streamrecordingexporter/qml/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/Condenser/qml/main.qml"));
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {

@@ -34,7 +34,7 @@ static QString formatRangeTime(qint64 ms)
     return QTime::fromMSecsSinceStartOfDay(int(ms)).toString(ms >= 3600000 ? "h:mm:ss.zzz" : "mm:ss.zzz");
 }
 
-#define EXPORT_SETTINGS QStringLiteral("BLumia"), QStringLiteral("PineappleSteamRecordingExporter")
+#define EXPORT_SETTINGS QStringLiteral("Condenser"), QStringLiteral("Condenser")
 
 VideoExporter::VideoExporter(QObject *parent)
     : QObject(parent)

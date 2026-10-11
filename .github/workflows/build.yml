@@ -55,7 +55,7 @@ jobs:
 
     - name: Deploy Qt
       run: |
-        & "windeployqt.exe" --no-compiler-runtime --no-opengl-sw --qmldir qml install\bin\PineappleSteamRecordingExporter.exe
+        & "windeployqt.exe" --no-compiler-runtime --no-opengl-sw --qmldir qml install\bin\Condenser.exe
 
     - name: Install FFmpeg
       run: |
@@ -67,10 +67,10 @@ jobs:
     - name: Package
       run: |
         cd install
-        7z a ../PineappleSteamRecordingExporter-Windows-${{ matrix.arch }}.zip *
+        7z a ../Condenser-Windows-${{ matrix.arch }}.zip *
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v6
       with:
-        name: PineappleSteamRecordingExporter-Windows-${{ matrix.arch }}
-        path: PineappleSteamRecordingExporter-Windows-${{ matrix.arch }}.zip
+        name: Condenser-Windows-${{ matrix.arch }}
+        path: Condenser-Windows-${{ matrix.arch }}.zip

@@ -46,8 +46,8 @@ jobs:
     - name: Upload AppImage
       uses: actions/upload-artifact@v6
       with:
-        name: PineappleSteamRecordingExporter-AppImage
-        path: Pineapple*-x86_64.AppImage
+        name: Condenser-AppImage
+        path: Condenser*-x86_64.AppImage
 
   build-flatpak:
     runs-on: ubuntu-24.04
@@ -64,7 +64,7 @@ jobs:
     - name: Build Flatpak
       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        bundle: net.blumia.pineapple-steam-recording-exporter.flatpak
-        manifest-path: packaging/flatpak/net.blumia.pineapple-steam-recording-exporter.yml
+        bundle: top.makkendam.Condenser.flatpak
+        manifest-path: packaging/flatpak/top.makkendam.Condenser.yml
         cache-key: flatpak-builder-${{ github.sha }}
         upload-artifact: true

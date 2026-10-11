@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import net.blumia.pineapple.streamrecordingexporter
+import Condenser
 
 Page {
     id: root
@@ -27,7 +27,7 @@ Page {
                 spacing: 8
                 
                 Label {
-                    text: qsTr("Pineapple Steam Recording Exporter")
+                    text: qsTr("Condenser")
                     font.pixelSize: 28
                     font.weight: Font.Bold
                     color: Material.foreground

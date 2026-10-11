@@ -1,58 +1,32 @@
-# Pineapple Steam Recording Exporter
+# Condenser
 
-## Description
+Condenser turns hours of Steam background recordings into short clips.
 
-This is a tool for exporting video recorded by Steam as MP4 files: browse your background recordings and saved clips, cut out the part you want, and export it either without re-encoding or as widely playable H.264.
+It opens on your most recent session in a big player. Mark a start and end on the timeline (or press `I` and `O`), hit Export, and get an MP4: either Steam's original stream without re-encoding, or H.264 encoded on the GPU (VAAPI) or CPU (libx264) so it plays everywhere.
 
-This tool is designed to be used on Steam Deck, but also works on other Linux distributions and Windows as well.
+## Why
 
-## Get it!
+Steam's own recording export on Linux only looks for an NVIDIA encoder when re-encoding, so exporting HEVC recordings fails on AMD and Intel GPUs, and H.264 exports are capped at 1920 pixels wide. Condenser does the export with FFmpeg instead.
 
-For Linux users, the Flatpak version on Flathub is suggested to be used:
+## Features
 
-<a href='https://flathub.org/apps/net.blumia.pineapple-steam-recording-exporter'>
-<img width='240' alt='Get it on Flathub' src='https://flathub.org/api/badge?locale=en'/>
-</a>
+- Sessions (Steam's background recordings) and saved clips in separate tabs
+- Timeline with time marks and the time under the mouse, for finding moments in long sessions
+- Export a part of a recording without saving a clip in Steam first
+- Original stream copy, or H.264 on the GPU/CPU, capped at the recording's own bitrate
+- Names for non-Steam game shortcuts (e.g. Battle.net) from `shortcuts.vdf`
 
-If using Flatpak version is not an option, you can get other builds at [GitHub Release](https://github.com/BLumia/pineapple-steam-recording-exporter/releases) page (e.g. Windows version, AppImage version), but be aware non-flatpak version might have known issues.
+## Building
 
-You can also check out the nightly builds if preferred, see info below.
+Condenser is built as a Flatpak:
 
-<details>
-<summary>CI builds:</summary>
-
-|CI|Build Status|CI Builds|
-|---|---|---|
-|Windows|[![Windows CI](https://github.com/BLumia/pineapple-steam-recording-exporter/actions/workflows/build.yml/badge.svg)](https://github.com/BLumia/pineapple-steam-recording-exporter/actions/workflows/build.yml)|[Get Latest CI Builds](https://nightly.link/BLumia/pineapple-steam-recording-exporter/workflows/build/master)|
-|Linux (AppImage & Flatpak)|[![Linux CI](https://github.com/BLumia/pineapple-steam-recording-exporter/actions/workflows/build-linux.yml/badge.svg)](https://github.com/BLumia/pineapple-steam-recording-exporter/actions/workflows/build.yml)|[Get Latest CI Builds](https://nightly.link/BLumia/pineapple-steam-recording-exporter/workflows/build-linux/master)|
-
-</details>
-
-## How it works
-
-The tool uses FFmpeg to convert the video files recorded by Steam into MP4 format without video transcoding and without losing any quality (`ffmpeg -c copy`). Optionally it re-encodes to H.264 on the GPU (VAAPI) or CPU (libx264).
-
-## Contribution
-
-Beside feedback and code contribution, other contributions are also welcome!
-
-### Funding
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/blumia)
-
-[![Afdian](https://static.afdiancdn.com/static/img/logo/logo.png)Afdian](https://afdian.com/a/BLumia)
-
-## CLA
-
-```
-By sending patches in GitHub Pull Request, Issues, email patch 
-set, or any other form to this project, it is assumed that you
-are offering the Pineapple Steam Recording Exporter project and
-the original project author (Gary Wang) unlimited, non-exclusive
-right to reuse, modify, and relicense the code.
+```sh
+flatpak run org.flatpak.Builder --user --install --force-clean build packaging/flatpak/top.makkendam.Condenser.yml
 ```
 
-This is important because the inability to relicense code has caused devastating problems for other Free Software projects (such as KDE and NASM). Pineapple Steam Recording Exporter will always be available in an OSI approved, DFSG-compatible license. If you wish to specify special license conditions of your contributions, just say so when you send them.
+## Credits
+
+Condenser is based on [Pineapple Steam Recording Exporter](https://github.com/BLumia/pineapple-steam-recording-exporter) by Gary "BLumia" Wang.
 
 ## License
 
