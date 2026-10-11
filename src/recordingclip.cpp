@@ -348,9 +348,15 @@ QString RecordingClip::ensureStaticMpd(const QString &mpdPath) const
         fixedContent = fixedContent.left(fixedDocEnd + 6) + QLatin1Char('\n');
     }
 
+    // The fixed copy lives in Condenser's cache, not in Steam's folder; a
+    // BaseURL points FFmpeg back at the chunks next to the original manifest
     const QFileInfo info(mpdPath);
-    const QString fixedPath = info.absolutePath() + QLatin1Char('/')
-                              + info.completeBaseName() + QLatin1String(".psre.mpd");
+    if (!fixedContent.contains(QLatin1String("<BaseURL>"))) {
+        const int mpdTagEnd = fixedContent.indexOf(QLatin1Char('>'), fixedContent.indexOf(QLatin1String("<MPD"))) + 1;
+        fixedContent.insert(mpdTagEnd, QStringLiteral("<BaseURL>%1/</BaseURL>").arg(info.absolutePath().toHtmlEscaped()));
+    }
+    const QString fixedPath = ThumbnailProvider::cacheDirFor(info.absolutePath()) + QLatin1Char('/')
+                              + info.completeBaseName() + QLatin1String(".mpd");
 
     // Reuse the copy from a previous run when it is still up to date
     // (identical content), so the format can also be re-generated after

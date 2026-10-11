@@ -1019,9 +1019,6 @@ Page {
             completedPath = ""
             failure = ""
             fileNameField.text = suggestedFileName()
-            if (videoExporter) {
-                videoExporter.clearLog()
-            }
         }
 
         function suggestedFileName() {

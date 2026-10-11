@@ -7,13 +7,14 @@
 #include <QRegularExpression>
 #include <QDateTime>
 #include <QDebug>
-#include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
 #include <QLocale>
 #include <QSettings>
 #include <QFile>
 #include <QTime>
+
+#include "ffmpeg.h"
 
 static const char *VideoCodecSettingsKey = "export/videoCodec";
 static const char *VideoBitrateSettingsKey = "export/videoBitrateMbps";
@@ -29,11 +30,6 @@ static bool isHevcManifest(const QString &mpdPath)
     return hevcRe.match(QString::fromUtf8(file.readAll())).hasMatch();
 }
 
-static QString formatRangeTime(qint64 ms)
-{
-    return QTime::fromMSecsSinceStartOfDay(int(ms)).toString(ms >= 3600000 ? "h:mm:ss.zzz" : "mm:ss.zzz");
-}
-
 #define EXPORT_SETTINGS QStringLiteral("Condenser"), QStringLiteral("Condenser")
 
 VideoExporter::VideoExporter(QObject *parent)
@@ -46,7 +42,6 @@ VideoExporter::VideoExporter(QObject *parent)
     , m_rangeStartMs(-1)
     , m_rangeEndMs(-1)
     , m_ffmpegProcess(new QProcess(this))
-    , m_progressTimer(new QTimer(this))
     , m_startTime(0)
     , m_lastOutTimeMs(0)
     , m_totalDurationMs(0)
@@ -56,8 +51,6 @@ VideoExporter::VideoExporter(QObject *parent)
     // Set default export path
     m_defaultExportPath = getDefaultExportDirectory();
     
-    // Set default ffmpeg path (assume it's in PATH)
-    m_ffmpegPath = "ffmpeg";
 
     // Restore the last used export format
     const QSettings settings(EXPORT_SETTINGS);
@@ -68,9 +61,6 @@ VideoExporter::VideoExporter(QObject *parent)
     }
     m_videoBitrateMbps = qBound(1, settings.value(VideoBitrateSettingsKey, 30).toInt(), 200);
     
-    // Setup progress timer
-    m_progressTimer->setInterval(1000); // Update every second
-    connect(m_progressTimer, &QTimer::timeout, this, &VideoExporter::updateProgress);
     
     // Connect process signals
     connect(m_ffmpegProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -96,14 +86,6 @@ void VideoExporter::setDefaultExportPath(const QString &path)
     if (m_defaultExportPath != path) {
         m_defaultExportPath = path;
         emit defaultExportPathChanged();
-    }
-}
-
-void VideoExporter::setFfmpegPath(const QString &path)
-{
-    if (m_ffmpegPath != path) {
-        m_ffmpegPath = path;
-        emit ffmpegPathChanged();
     }
 }
 
@@ -182,17 +164,13 @@ bool VideoExporter::exportSegment(RecordingClip *clip, int segmentIndex, const Q
         );
     }
 
-    QString operationName = tr("Exporting segment %1 of %2")
-        .arg(segmentIndex + 1)
-        .arg(clip->gameName().isEmpty() ? clip->appId() : clip->gameName());
-
     m_rangeStartMs = startMs;
     m_rangeEndMs = endMs;
 
     // Re-encoding above the source bitrate only makes the file bigger
     const int sourceMbps = clip->videoBitrateMbps(segmentIndex);
     m_exportBitrateMbps = sourceMbps > 0 ? qMin(m_videoBitrateMbps, sourceMbps) : m_videoBitrateMbps;
-    return startExport(mpdPath, finalOutputPath, operationName);
+    return startExport(mpdPath, finalOutputPath);
 }
 
 void VideoExporter::cancelExport()
@@ -201,7 +179,6 @@ void VideoExporter::cancelExport()
         return;
     }
 
-    addToLog(tr("Cancelling export..."));
     m_isCancelling = true;
 
     m_ffmpegProcess->kill();
@@ -210,7 +187,6 @@ void VideoExporter::cancelExport()
         m_ffmpegProcess->waitForFinished(1000);
     }
 
-    flushPendingLog();
     resetState();
     emit exportCancelled();
 }
@@ -256,15 +232,6 @@ bool VideoExporter::validateOutputPath(const QString &path) const
 
     QFileInfo dirInfo(parentDir.absolutePath());
     return dirInfo.isWritable();
-}
-
-void VideoExporter::clearLog()
-{
-    m_pendingLogLines.clear();
-    if (!m_exportLog.isEmpty()) {
-        m_exportLog.clear();
-        emit exportLogChanged();
-    }
 }
 
 void VideoExporter::openExportLocation(const QString &filePath) const
@@ -313,22 +280,17 @@ QString VideoExporter::sanitizeFilename(const QString &filename)
 
 void VideoExporter::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
-    m_progressTimer->stop();
 
     if (m_isCancelling) {
         // The process was killed on user request, don't report it as an error
-        addToLog(tr("Export cancelled."));
-        flushPendingLog();
         resetState();
         emit exportCancelled();
         return;
     }
 
     if (exitStatus == QProcess::CrashExit) {
-        QString error = tr("FFmpeg process crashed");
+        QString error = failureMessage(tr("FFmpeg crashed"));
         setLastError(error);
-        addToLog(error);
-        flushPendingLog();
         resetState();
         emit exportFailed(error);
         return;
@@ -336,15 +298,6 @@ void VideoExporter::onProcessFinished(int exitCode, QProcess::ExitStatus exitSta
 
     if (exitCode == 0) {
         // Success
-        addToLog(tr("Export completed successfully!"));
-        
-        QFileInfo outputFile(m_currentOutputPath);
-        if (outputFile.exists()) {
-            addToLog(tr("Output file: %1 (%2)")
-                .arg(outputFile.fileName())
-                .arg(QLocale().formattedDataSize(outputFile.size())));
-        }
-        flushPendingLog();
 
         QString outputPath = m_currentOutputPath;
         resetState();
@@ -352,10 +305,8 @@ void VideoExporter::onProcessFinished(int exitCode, QProcess::ExitStatus exitSta
         emit exportCompleted(outputPath);
     } else {
         // Error
-        QString error = tr("FFmpeg exited with code %1").arg(exitCode);
+        QString error = failureMessage(tr("FFmpeg exited with code %1").arg(exitCode));
         setLastError(error);
-        addToLog(error);
-        flushPendingLog();
         resetState();
         emit exportFailed(error);
     }
@@ -363,7 +314,6 @@ void VideoExporter::onProcessFinished(int exitCode, QProcess::ExitStatus exitSta
 
 void VideoExporter::onProcessError(QProcess::ProcessError error)
 {
-    m_progressTimer->stop();
 
     if (m_isCancelling) {
         // Error notifications triggered by killing the process on user
@@ -396,8 +346,6 @@ void VideoExporter::onProcessError(QProcess::ProcessError error)
     }
     
     setLastError(errorString);
-    addToLog(errorString);
-    flushPendingLog();
     resetState();
     emit exportFailed(errorString);
 }
@@ -421,17 +369,9 @@ void VideoExporter::onProcessReadyReadStandardError()
     handleProcessOutput(QString::fromUtf8(m_ffmpegProcess->readAllStandardError()));
 }
 
-void VideoExporter::updateProgress()
+bool VideoExporter::startExport(const QString &inputMpdPath, const QString &outputPath)
 {
-    // Called once per second while exporting. Progress values themselves are
-    // pushed by handleProcessOutput(); use the tick to flush queued log lines
-    // so the QML log view is refreshed at most once per second.
-    flushPendingLog();
-}
-
-bool VideoExporter::startExport(const QString &inputMpdPath, const QString &outputPath, const QString &operationName)
-{
-    if (!validateFfmpegExecutable()) {
+    if (QStandardPaths::findExecutable(ffmpegProgram()).isEmpty() && !QFileInfo(ffmpegProgram()).isExecutable()) {
         setLastError(tr("FFmpeg executable not found or not accessible"));
         return false;
     }
@@ -454,15 +394,10 @@ bool VideoExporter::startExport(const QString &inputMpdPath, const QString &outp
     // Set up export
     m_currentInputPath = inputMpdPath;
     m_currentOutputPath = finalOutputPath;
-    setCurrentOperation(operationName);
     setIsExporting(true);
     m_startTime = QDateTime::currentMSecsSinceEpoch();
     
-    addToLog(tr("Starting export: %1").arg(operationName));
-    addToLog(tr("Input: %1").arg(inputMpdPath));
-    addToLog(tr("Output: %1").arg(finalOutputPath));
     if (m_rangeEndMs > 0) {
-        addToLog(tr("Range: %1 - %2").arg(formatRangeTime(m_rangeStartMs), formatRangeTime(m_rangeEndMs)));
         // FFmpeg's "Duration:" banner reports the whole input; progress is relative to the range
         m_totalDurationMs = m_rangeEndMs - m_rangeStartMs;
     }
@@ -477,10 +412,9 @@ void VideoExporter::setupExportProcess(const QString &inputMpdPath, const QStrin
 {
     QStringList arguments = buildFfmpegArguments(inputMpdPath, outputPath);
     
-    addToLog(tr("FFmpeg command: %1 %2").arg(m_ffmpegPath, arguments.join(" ")));
+    qDebug().noquote() << "FFmpeg:" << ffmpegProgram() << arguments.join(QLatin1Char(' '));
     
-    m_ffmpegProcess->start(m_ffmpegPath, arguments);
-    m_progressTimer->start();
+    m_ffmpegProcess->start(ffmpegProgram(), arguments);
 }
 
 QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, const QString &outputPath) const
@@ -604,7 +538,7 @@ void VideoExporter::handleProcessOutput(const QString &output)
             continue;
         }
 
-        addToLog(line);
+        rememberFfmpegMessage(line);
     }
 }
 
@@ -726,24 +660,6 @@ bool VideoExporter::validateInputFile(const QString &mpdPath) const
     return fileInfo.exists() && fileInfo.isReadable() && fileInfo.suffix().toLower() == "mpd";
 }
 
-bool VideoExporter::validateFfmpegExecutable() const
-{
-    if (m_ffmpegPath.isEmpty()) {
-        return false;
-    }
-
-    const QFileInfo info(m_ffmpegPath);
-    if (info.isAbsolute() || m_ffmpegPath.contains(QLatin1Char('/'))
-        || m_ffmpegPath.contains(QLatin1Char('\\'))) {
-        return info.isFile() && info.isExecutable();
-    }
-
-    // A bare executable name: resolve it through PATH without spawning a
-    // process. Spawning ffmpeg and calling waitForFinished() here ran on the
-    // GUI thread and froze the window for up to five seconds.
-    return !QStandardPaths::findExecutable(m_ffmpegPath).isEmpty();
-}
-
 QString VideoExporter::ensureOutputDirectory(const QString &outputPath) const
 {
     if (!validateOutputPath(outputPath)) {
@@ -751,53 +667,6 @@ QString VideoExporter::ensureOutputDirectory(const QString &outputPath) const
     }
 
     return outputPath;
-}
-
-void VideoExporter::addToLog(const QString &message)
-{
-    QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
-    QString logLine = QString("[%1] %2").arg(timestamp, message);
-
-    // Queue the line; flushPendingLog() applies the batch to m_exportLog.
-    // Appending (and notifying QML) for every single FFmpeg output line made
-    // the log view re-render constantly and froze the UI on long exports.
-    m_pendingLogLines.append(logLine);
-
-    qDebug() << "VideoExporter:" << message;
-}
-
-void VideoExporter::flushPendingLog()
-{
-    if (m_pendingLogLines.isEmpty()) {
-        return;
-    }
-
-    for (const QString &line : m_pendingLogLines) {
-        m_exportLog += line + QLatin1Char('\n');
-    }
-    m_pendingLogLines.clear();
-
-    // Keep the log bounded so the QML view stays cheap to render no matter
-    // how much FFmpeg prints
-    static const int MaxLogLines = 500;
-    const int lineCount = m_exportLog.count(QLatin1Char('\n'));
-    if (lineCount > MaxLogLines) {
-        int cutPos = 0;
-        for (int i = 0; i < lineCount - MaxLogLines; ++i) {
-            cutPos = m_exportLog.indexOf(QLatin1Char('\n'), cutPos) + 1;
-        }
-        m_exportLog.remove(0, cutPos);
-    }
-
-    emit exportLogChanged();
-}
-
-void VideoExporter::setCurrentOperation(const QString &operation)
-{
-    if (m_currentOperation != operation) {
-        m_currentOperation = operation;
-        emit currentOperationChanged();
-    }
 }
 
 void VideoExporter::setProgress(int progress)
@@ -828,7 +697,7 @@ void VideoExporter::setLastError(const QString &error)
 void VideoExporter::resetState()
 {
     setIsExporting(false);
-    setCurrentOperation(QString());
+    m_ffmpegMessages.clear();
     setProgress(0);
     setLastError(QString());
     m_currentInputPath.clear();
@@ -842,3 +711,18 @@ void VideoExporter::resetState()
     // calls this, so they are deliberately not reset here
 }
 
+void VideoExporter::rememberFfmpegMessage(const QString &line)
+{
+    m_ffmpegMessages.append(line);
+    if (m_ffmpegMessages.size() > 3) {
+        m_ffmpegMessages.removeFirst();
+    }
+}
+
+QString VideoExporter::failureMessage(const QString &summary) const
+{
+    if (m_ffmpegMessages.isEmpty()) {
+        return summary;
+    }
+    return summary + QStringLiteral(":\n") + m_ffmpegMessages.join(QLatin1Char('\n'));
+}

@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find required Qt6 components
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets Quick QuickControls2 Multimedia)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Quick QuickControls2 Multimedia)
 find_package(KF6IconThemes)
 
 include(GNUInstallDirs)
@@ -75,7 +75,6 @@ qt_add_resources(Condenser "icons"
 # Link Qt libraries
 target_link_libraries(Condenser PRIVATE
     Qt6::Core
-    Qt6::Widgets
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Multimedia
@@ -87,6 +86,8 @@ if(TARGET KF6::IconThemes)
 endif ()
 
 target_compile_definitions(Condenser PRIVATE PSRE_VERSION="${PROJECT_VERSION}")
+# qDebug() is for development; release builds only keep warnings and errors
+target_compile_definitions(Condenser PRIVATE $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>)
 
 # Include directories
 target_include_directories(Condenser PRIVATE src)

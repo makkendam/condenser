@@ -27,7 +27,7 @@ modules:
   - name: Condenser
     buildsystem: cmake-ninja
     config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: dir
         path: "../../"

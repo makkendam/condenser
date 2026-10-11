@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QString>
 #include <QProcess>
-#include <QTimer>
 #include <QFileInfo>
 #include <QUrl>
 
@@ -15,12 +14,9 @@ class VideoExporter : public QObject
     Q_OBJECT
     
     Q_PROPERTY(bool isExporting READ isExporting NOTIFY isExportingChanged)
-    Q_PROPERTY(QString currentOperation READ currentOperation NOTIFY currentOperationChanged)
     Q_PROPERTY(int progress READ progress NOTIFY progressChanged)
-    Q_PROPERTY(QString exportLog READ exportLog NOTIFY exportLogChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
     Q_PROPERTY(QString defaultExportPath READ defaultExportPath WRITE setDefaultExportPath NOTIFY defaultExportPathChanged)
-    Q_PROPERTY(QString ffmpegPath READ ffmpegPath WRITE setFfmpegPath NOTIFY ffmpegPathChanged)
     Q_PROPERTY(VideoCodec videoCodec READ videoCodec WRITE setVideoCodec NOTIFY videoCodecChanged)
     Q_PROPERTY(int videoBitrateMbps READ videoBitrateMbps WRITE setVideoBitrateMbps NOTIFY videoBitrateMbpsChanged)
     Q_PROPERTY(bool hardwareEncodingSupported READ hardwareEncodingSupported CONSTANT)
@@ -41,19 +37,15 @@ public:
 
     // Property getters
     bool isExporting() const { return m_isExporting; }
-    QString currentOperation() const { return m_currentOperation; }
     int progress() const { return m_progress; }
-    QString exportLog() const { return m_exportLog; }
     QString lastError() const { return m_lastError; }
     QString defaultExportPath() const { return m_defaultExportPath; }
-    QString ffmpegPath() const { return m_ffmpegPath; }
     VideoCodec videoCodec() const { return m_videoCodec; }
     int videoBitrateMbps() const { return m_videoBitrateMbps; }
     bool hardwareEncodingSupported() const;
 
     // Property setters
     void setDefaultExportPath(const QString &path);
-    void setFfmpegPath(const QString &path);
     void setVideoCodec(VideoCodec codec);
     void setVideoBitrateMbps(int mbps);
 
@@ -66,8 +58,6 @@ public:
     
     // Utility methods
     Q_INVOKABLE QString generateOutputFilename(RecordingClip *clip, int segmentIndex = -1) const;
-    Q_INVOKABLE bool validateOutputPath(const QString &path) const;
-    Q_INVOKABLE void clearLog();
     Q_INVOKABLE void openExportLocation(const QString &filePath) const;
 
     // Static utility methods
@@ -76,12 +66,9 @@ public:
 
 signals:
     void isExportingChanged();
-    void currentOperationChanged();
     void progressChanged();
-    void exportLogChanged();
     void lastErrorChanged();
     void defaultExportPathChanged();
-    void ffmpegPathChanged();
     void videoCodecChanged();
     void videoBitrateMbpsChanged();
     void exportStarted(const QString &outputPath);
@@ -94,12 +81,11 @@ private slots:
     void onProcessError(QProcess::ProcessError error);
     void onProcessReadyReadStandardOutput();
     void onProcessReadyReadStandardError();
-    void updateProgress();
 
 private:
     // Export implementation
     bool exportSegment(RecordingClip *clip, int segmentIndex, const QString &outputPath, qint64 startMs, qint64 endMs);
-    bool startExport(const QString &inputMpdPath, const QString &outputPath, const QString &operationName);
+    bool startExport(const QString &inputMpdPath, const QString &outputPath);
     void setupExportProcess(const QString &inputMpdPath, const QString &outputPath);
     QStringList buildFfmpegArguments(const QString &inputMpdPath, const QString &outputPath) const;
     
@@ -111,11 +97,11 @@ private:
     
     // Validation and helpers
     bool validateInputFile(const QString &mpdPath) const;
-    bool validateFfmpegExecutable() const;
+    bool validateOutputPath(const QString &path) const;
     QString ensureOutputDirectory(const QString &outputPath) const;
-    void addToLog(const QString &message);
-    void flushPendingLog();
-    void setCurrentOperation(const QString &operation);
+    // Keeps FFmpeg's last few messages, to explain a failed export
+    void rememberFfmpegMessage(const QString &line);
+    QString failureMessage(const QString &summary) const;
     void setProgress(int progress);
     void setIsExporting(bool exporting);
     void setLastError(const QString &error);
@@ -124,13 +110,9 @@ private:
 
     // Member variables
     bool m_isExporting;
-    QString m_currentOperation;
     int m_progress;
-    QString m_exportLog;
-    QStringList m_pendingLogLines;
     QString m_lastError;
     QString m_defaultExportPath;
-    QString m_ffmpegPath;
     VideoCodec m_videoCodec;
     int m_videoBitrateMbps;
     // Bitrate used for the current export: m_videoBitrateMbps, capped to the source
@@ -141,7 +123,6 @@ private:
     
     // Process management
     QProcess *m_ffmpegProcess;
-    QTimer *m_progressTimer;
     QString m_currentOutputPath;
     QString m_currentInputPath;
     
@@ -151,6 +132,7 @@ private:
     qint64 m_totalDurationMs;
     int m_lastProgress;
     QString m_progressBuffer;
+    QStringList m_ffmpegMessages;
     bool m_isCancelling;
 };
 

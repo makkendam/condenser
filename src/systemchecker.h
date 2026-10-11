@@ -3,83 +3,43 @@
 
 #include <QObject>
 #include <QString>
-#include <QStringList>
-#include <QTimer>
 
+// Finds Steam and FFmpeg at startup. Only file lookups, no processes, so it
+// costs next to nothing; the QML shows a page only when something is missing.
 class SystemChecker : public QObject
 {
     Q_OBJECT
-    
-    Q_PROPERTY(bool isChecking READ isChecking NOTIFY isCheckingChanged)
-    Q_PROPERTY(bool steamFound READ steamFound NOTIFY steamFoundChanged)
-    Q_PROPERTY(bool ffmpegFound READ ffmpegFound NOTIFY ffmpegFoundChanged)
-    Q_PROPERTY(QString steamPath READ steamPath NOTIFY steamPathChanged)
-    Q_PROPERTY(QString ffmpegPath READ ffmpegPath NOTIFY ffmpegPathChanged)
-    Q_PROPERTY(QStringList checkResults READ checkResults NOTIFY checkResultsChanged)
-    Q_PROPERTY(bool allChecksPass READ allChecksPass NOTIFY allChecksPassChanged)
+
+    Q_PROPERTY(bool steamFound READ steamFound NOTIFY checked)
+    Q_PROPERTY(bool ffmpegFound READ ffmpegFound NOTIFY checked)
+    Q_PROPERTY(QString steamPath READ steamPath NOTIFY checked)
+    Q_PROPERTY(bool allChecksPass READ allChecksPass NOTIFY checked)
     Q_PROPERTY(bool isSteamGameMode READ isSteamGameMode CONSTANT)
 
 public:
     explicit SystemChecker(QObject *parent = nullptr);
 
-    // Property getters
-    bool isChecking() const { return m_isChecking; }
-    bool steamFound() const { return m_steamFound; }
+    bool steamFound() const { return !m_steamPath.isEmpty(); }
     bool ffmpegFound() const { return m_ffmpegFound; }
     QString steamPath() const { return m_steamPath; }
-    QString ffmpegPath() const { return m_ffmpegPath; }
-    QStringList checkResults() const { return m_checkResults; }
-    bool allChecksPass() const { return m_steamFound && m_ffmpegFound; }
+    bool allChecksPass() const { return steamFound() && m_ffmpegFound; }
     bool isSteamGameMode() const { return m_isSteamGameMode; }
 
 public slots:
+    // Runs the checks on the next event loop pass, then emits systemCheckCompleted()
     void startSystemCheck();
-    void recheckSteam();
-    void recheckFfmpeg();
 
 signals:
-    void isCheckingChanged();
-    void steamFoundChanged();
-    void ffmpegFoundChanged();
-    void steamPathChanged();
-    void ffmpegPathChanged();
-    void checkResultsChanged();
-    void allChecksPassChanged();
+    void checked();
     void systemCheckCompleted();
 
-private slots:
-    void performChecks();
-
 private:
-    // Steam detection methods
-    QString findSteamPathWindows();
-    QString findSteamPathLinux();
-    bool validateSteamPath(const QString &path);
-    QString getGameRecordingsPath(const QString &steamPath);
+    static QString findSteamPath();
+    static bool isSteamPath(const QString &path);
 
-    // FFmpeg detection methods
-    QString findFfmpegInPath();
-    bool validateFfmpeg(const QString &ffmpegPath);
-
-    // Helper methods
-    void addCheckResult(const QString &message);
-    void clearCheckResults();
-    void setIsChecking(bool checking);
-    void setSteamFound(bool found);
-    void setFfmpegFound(bool found);
-    void setSteamPath(const QString &path);
-    void setFfmpegPath(const QString &path);
-
-    // Member variables
-    bool m_isChecking;
-    bool m_steamFound;
-    bool m_ffmpegFound;
     QString m_steamPath;
-    QString m_ffmpegPath;
-    QString m_gameRecordingsPath;
-    QStringList m_checkResults;
-    QTimer *m_checkTimer;
-    bool m_isSteamGameMode;
+    bool m_ffmpegFound = false;
+    bool m_isSteamGameMode = false;
 };
 
 #endif // SYSTEMCHECKER_H

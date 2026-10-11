@@ -1,4 +1,5 @@
 #include "thumbnailprovider.h"
+#include "ffmpeg.h"
 
 #include <QCryptographicHash>
 #include <QDir>
@@ -175,8 +176,10 @@ void runNextCover()
                 coverQueue.clear(); // No FFmpeg: no point trying the rest
             }
         });
-        process->start(QStringLiteral("ffmpeg"), {
+        process->start(ffmpegProgram(), {
             QStringLiteral("-v"), QStringLiteral("error"), QStringLiteral("-y"),
+            // Only decode the keyframe the chunk starts with, not the whole chunk
+            QStringLiteral("-skip_frame"), QStringLiteral("nokey"),
             QStringLiteral("-f"), QStringLiteral("mp4"), QStringLiteral("-i"), QStringLiteral("pipe:0"),
             QStringLiteral("-frames:v"), QStringLiteral("1"),
             QStringLiteral("-vf"), QStringLiteral("scale=320:-2"),
@@ -377,8 +380,10 @@ void ThumbnailProvider::startNext()
             }
         });
 
-        process->start(QStringLiteral("ffmpeg"), {
+        process->start(ffmpegProgram(), {
             QStringLiteral("-v"), QStringLiteral("error"), QStringLiteral("-y"),
+            // Only decode the keyframe the chunk starts with, not the whole chunk
+            QStringLiteral("-skip_frame"), QStringLiteral("nokey"),
             QStringLiteral("-f"), QStringLiteral("mp4"), QStringLiteral("-i"), QStringLiteral("pipe:0"),
             QStringLiteral("-frames:v"), QStringLiteral("1"),
             QStringLiteral("-vf"), QLatin1String(ThumbnailScale),
