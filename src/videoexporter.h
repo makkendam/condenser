@@ -57,6 +57,9 @@ public:
 
     // Export methods
     Q_INVOKABLE bool exportClipSegment(RecordingClip *clip, int segmentIndex, const QString &outputPath = QString());
+    // Export only [startMs, endMs) of a segment
+    Q_INVOKABLE bool exportClipRange(RecordingClip *clip, int segmentIndex, qint64 startMs, qint64 endMs,
+                                     const QString &outputPath = QString());
     Q_INVOKABLE bool exportEntireClip(RecordingClip *clip, const QString &outputPath = QString());
     Q_INVOKABLE void cancelExport();
     
@@ -95,6 +98,7 @@ private slots:
 
 private:
     // Export implementation
+    bool exportSegment(RecordingClip *clip, int segmentIndex, const QString &outputPath, qint64 startMs, qint64 endMs);
     bool startExport(const QString &inputMpdPath, const QString &outputPath, const QString &operationName);
     void setupExportProcess(const QString &inputMpdPath, const QString &outputPath);
     QStringList buildFfmpegArguments(const QString &inputMpdPath, const QString &outputPath) const;
@@ -129,6 +133,9 @@ private:
     QString m_ffmpegPath;
     VideoCodec m_videoCodec;
     int m_videoBitrateMbps;
+    // Range of the current export, -1 when exporting the whole segment
+    qint64 m_rangeStartMs;
+    qint64 m_rangeEndMs;
     
     // Process management
     QProcess *m_ffmpegProcess;

@@ -117,11 +117,34 @@ ItemDelegate {
             }
             
             // Recording date
-            Label {
-                text: root.recordingClip ? root.recordingClip.formattedDate : ""
-                font.pixelSize: 12
-                color: Material.hintTextColor
+            RowLayout {
                 Layout.fillWidth: true
+                spacing: 8
+
+                Label {
+                    text: root.recordingClip ? root.recordingClip.formattedDate : ""
+                    font.pixelSize: 12
+                    color: Material.hintTextColor
+                }
+
+                Rectangle {
+                    visible: root.recordingClip && root.recordingClip.isBackgroundRecording
+                    implicitWidth: backgroundLabel.implicitWidth + 8
+                    implicitHeight: backgroundLabel.implicitHeight + 4
+                    radius: 2
+                    color: Material.accent
+
+                    Label {
+                        id: backgroundLabel
+                        anchors.centerIn: parent
+                        text: qsTr("Full recording")
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        color: "white"
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
             }
             
             // Spacer

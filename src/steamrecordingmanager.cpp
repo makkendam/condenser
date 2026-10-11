@@ -3,6 +3,7 @@
 #include "gameinfo.h"
 #include "qvdfparser.h"
 #include <QDir>
+#include <algorithm>
 #include <QFileInfo>
 #include <QDebug>
 #include <QStandardPaths>
@@ -262,6 +263,18 @@ void SteamRecordingManager::performScan()
 
     // Find all clips
     QList<RecordingClip*> foundClips = RecordingClip::findAllClips(m_gameRecordingsPath, this);
+
+    // Full background recordings, so parts of them can be exported without
+    // saving a clip in Steam first
+    const QList<RecordingClip*> backgroundRecordings =
+        RecordingClip::findAllBackgroundRecordings(m_gameRecordingsPath, this);
+    if (!backgroundRecordings.isEmpty()) {
+        addScanResult(tr("Found %1 background recordings").arg(backgroundRecordings.size()));
+        foundClips += backgroundRecordings;
+        std::stable_sort(foundClips.begin(), foundClips.end(), [](const RecordingClip *a, const RecordingClip *b) {
+            return a->recordingDate() > b->recordingDate();
+        });
+    }
     
     if (foundClips.isEmpty()) {
         addScanResult(tr("No recording clips found."));

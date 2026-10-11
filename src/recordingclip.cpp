@@ -16,6 +16,7 @@ RecordingClip::RecordingClip(QObject *parent)
     : QObject(parent)
     , m_totalSize(0)
     , m_duration(0)
+    , m_isBackgroundRecording(false)
     , m_formattedDateCached(false)
     , m_formattedSizeCached(false)
     , m_formattedDurationCached(false)
@@ -26,6 +27,7 @@ RecordingClip::RecordingClip(const QString &clipPath, QObject *parent)
     : QObject(parent)
     , m_totalSize(0)
     , m_duration(0)
+    , m_isBackgroundRecording(false)
     , m_formattedDateCached(false)
     , m_formattedSizeCached(false)
     , m_formattedDurationCached(false)
@@ -527,6 +529,42 @@ QList<RecordingClip*> RecordingClip::findAllClips(const QString &gameRecordingsP
     return clips;
 }
 
+QList<RecordingClip*> RecordingClip::findAllBackgroundRecordings(const QString &gameRecordingsPath, QObject *parent)
+{
+    QList<RecordingClip*> recordings;
+
+    QDir videoDir(gameRecordingsPath);
+    if (!videoDir.cd("video")) {
+        qWarning() << "Video directory does not exist in:" << gameRecordingsPath;
+        return recordings;
+    }
+
+    // Steam starts a new directory whenever the captured resolution changes,
+    // which leaves lots of tiny ones around game start; skip those
+    static const int MinDurationSeconds = 30;
+
+    const QStringList recordingDirs = videoDir.entryList({QStringLiteral("bg_*"), QStringLiteral("fg_*")},
+                                                         QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const QString &dirName : recordingDirs) {
+        RecordingClip *recording = RecordingClip::fromClipPath(videoDir.absoluteFilePath(dirName), parent);
+        if (!recording) {
+            continue;
+        }
+        if (recording->segmentCount() == 0 || recording->duration() < MinDurationSeconds) {
+            delete recording;
+            continue;
+        }
+        recordings.append(recording);
+    }
+
+    std::sort(recordings.begin(), recordings.end(), [](const RecordingClip *a, const RecordingClip *b) {
+        return a->recordingDate() > b->recordingDate();
+    });
+
+    qDebug() << "Found" << recordings.size() << "background recordings";
+    return recordings;
+}
+
 void RecordingClip::parseClipPath()
 {
     if (m_clipPath.isEmpty()) {
@@ -538,13 +576,16 @@ void RecordingClip::parseClipPath()
 
     // Expected format: clip_<appid>_<date>_<time>
     // Example: clip_3527290_20251001_073810
-    QRegularExpression regex(R"(clip_(\d+)_(\d{8})_(\d{6}))");
+    // Background recordings are listed straight from video/, named
+    // bg_<appid>_<date>_<time> (fg_ for manual recordings)
+    QRegularExpression regex(R"(^(clip|bg|fg)_(\d+)_(\d{8})_(\d{6}))");
     QRegularExpressionMatch match = regex.match(clipDirName);
 
     if (match.hasMatch()) {
-        QString appId = match.captured(1);
-        QString dateStr = match.captured(2); // YYYYMMDD
-        QString timeStr = match.captured(3); // HHMMSS
+        m_isBackgroundRecording = match.captured(1) != QLatin1String("clip");
+        QString appId = match.captured(2);
+        QString dateStr = match.captured(3); // YYYYMMDD
+        QString timeStr = match.captured(4); // HHMMSS
 
         setAppId(appId);
 
@@ -585,7 +626,12 @@ void RecordingClip::scanSegments()
 {
     QStringList newSegments;
 
-    if (!m_clipPath.isEmpty()) {
+    if (m_isBackgroundRecording) {
+        // The recording directory is itself the only segment
+        if (QFileInfo::exists(QDir(m_clipPath).absoluteFilePath("session.mpd"))) {
+            newSegments.append(m_clipPath);
+        }
+    } else if (!m_clipPath.isEmpty()) {
         QDir clipDir(m_clipPath);
         QDir videoDir = clipDir;
         

@@ -27,6 +27,7 @@ class RecordingClip : public QObject
     Q_PROPERTY(QString formattedDate READ formattedDate NOTIFY formattedDateChanged)
     Q_PROPERTY(QString formattedSize READ formattedSize NOTIFY formattedSizeChanged)
     Q_PROPERTY(QString formattedDuration READ formattedDuration NOTIFY formattedDurationChanged)
+    Q_PROPERTY(bool isBackgroundRecording READ isBackgroundRecording NOTIFY clipPathChanged)
 
 public:
     explicit RecordingClip(QObject *parent = nullptr);
@@ -43,6 +44,8 @@ public:
     qint64 totalSize() const { return m_totalSize; }
     int duration() const { return m_duration; }
     bool isValid() const { return !m_clipPath.isEmpty() && !m_appId.isEmpty(); }
+    // A full background recording (video/bg_*) rather than a saved clip (clips/clip_*)
+    bool isBackgroundRecording() const { return m_isBackgroundRecording; }
     
     // Formatted getters
     QString formattedDate() const;
@@ -65,6 +68,7 @@ public:
     // Static factory methods
     static RecordingClip* fromClipPath(const QString &clipPath, QObject *parent = nullptr);
     static QList<RecordingClip*> findAllClips(const QString &gameRecordingsPath, QObject *parent = nullptr);
+    static QList<RecordingClip*> findAllBackgroundRecordings(const QString &gameRecordingsPath, QObject *parent = nullptr);
 
 signals:
     void appIdChanged();
@@ -109,6 +113,7 @@ private:
     QString m_gameName;
     qint64 m_totalSize;
     int m_duration; // in seconds
+    bool m_isBackgroundRecording;
     
     // Cached values
     mutable QString m_cachedFormattedDate;

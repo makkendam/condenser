@@ -9,6 +9,19 @@ Page {
     
     property RecordingClip clip: null
     property int segmentIndex: 0
+
+    // Optional part of the segment to export, -1 = not set
+    property real rangeStartMs: -1
+    property real rangeEndMs: -1
+    readonly property bool hasRange: rangeStartMs >= 0 && rangeEndMs > rangeStartMs
+
+    onClipChanged: clearRange()
+    onSegmentIndexChanged: clearRange()
+
+    function clearRange() {
+        rangeStartMs = -1
+        rangeEndMs = -1
+    }
     
     signal backRequested()
     signal exportCompleted()
@@ -254,6 +267,68 @@ Page {
                             onMoved: mediaPlayer.audioOutput.volume = value
                         }
                     }
+
+                    // Export range
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Button {
+                            text: qsTr("Set Start")
+                            enabled: root.mediaControlsEnabled
+                            onClicked: {
+                                root.rangeStartMs = mediaPlayer.position
+                                if (root.rangeEndMs >= 0 && root.rangeEndMs <= root.rangeStartMs) {
+                                    root.rangeEndMs = -1
+                                }
+                            }
+                        }
+
+                        Button {
+                            text: qsTr("Set End")
+                            enabled: root.mediaControlsEnabled
+                            onClicked: {
+                                root.rangeEndMs = mediaPlayer.position
+                                if (root.rangeStartMs < 0 || root.rangeStartMs >= root.rangeEndMs) {
+                                    root.rangeStartMs = 0
+                                }
+                            }
+                        }
+
+                        Button {
+                            text: qsTr("Clear")
+                            flat: true
+                            enabled: root.rangeStartMs >= 0 || root.rangeEndMs >= 0
+                            onClicked: root.clearRange()
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            font.pixelSize: 12
+                            color: root.hasRange ? Material.foreground : Material.hintTextColor
+                            elide: Text.ElideRight
+                            text: {
+                                if (root.hasRange) {
+                                    return qsTr("Export %1 – %2 (%3)")
+                                        .arg(formatTime(root.rangeStartMs))
+                                        .arg(formatTime(root.rangeEndMs))
+                                        .arg(formatTime(root.rangeEndMs - root.rangeStartMs))
+                                }
+                                if (root.rangeStartMs >= 0) {
+                                    return qsTr("Start at %1, now set the end").arg(formatTime(root.rangeStartMs))
+                                }
+                                return qsTr("Exporting the whole recording. Set a start and end to export only a part.")
+                            }
+                        }
+
+                        ToolButton {
+                            text: qsTr("Preview")
+                            visible: root.hasRange
+                            onClicked: {
+                                mediaPlayer.setPosition(root.rangeStartMs)
+                                mediaPlayer.play()
+                            }
+                        }
+                    }
                 }
             }
         
@@ -330,9 +405,17 @@ Page {
                             TextField {
                                 id: outputPathField
                                 Layout.fillWidth: true
-                                text: videoExporter && root.clip ?
-                                      videoExporter.generateOutputFilename(root.clip, root.segmentIndex) :
-                                      "recording.mp4"
+                                text: {
+                                    if (!videoExporter || !root.clip) {
+                                        return "recording.mp4"
+                                    }
+                                    var name = videoExporter.generateOutputFilename(root.clip, root.segmentIndex)
+                                    if (root.hasRange) {
+                                        // Keep exports of different parts of one recording apart
+                                        name = name.replace(/\.mp4$/, "") + "_at_" + formatTime(root.rangeStartMs).replace(/:/g, "-") + ".mp4"
+                                    }
+                                    return name
+                                }
                                 placeholderText: qsTr("Output filename")
 
 
@@ -429,7 +512,7 @@ Page {
                         }
 
                         Button {
-                            text: qsTr("Export Segment")
+                            text: root.hasRange ? qsTr("Export Range") : qsTr("Export Segment")
                             highlighted: true
                             enabled: root.clip && root.segmentIndex >= 0 &&
                                     (!videoExporter || !videoExporter.isExporting)
@@ -440,7 +523,12 @@ Page {
                                     if (outputPathField.text.trim() !== "") {
                                         outputPath = videoExporter.defaultExportPath + "/" + outputPathField.text.trim()
                                     }
-                                    videoExporter.exportClipSegment(root.clip, root.segmentIndex, outputPath)
+                                    if (root.hasRange) {
+                                        videoExporter.exportClipRange(root.clip, root.segmentIndex,
+                                                                      root.rangeStartMs, root.rangeEndMs, outputPath)
+                                    } else {
+                                        videoExporter.exportClipSegment(root.clip, root.segmentIndex, outputPath)
+                                    }
                                 }
                             }
                         }

@@ -13,6 +13,7 @@
 #include <QLocale>
 #include <QSettings>
 #include <QFile>
+#include <QTime>
 
 static const char *VideoCodecSettingsKey = "export/videoCodec";
 static const char *VideoBitrateSettingsKey = "export/videoBitrateMbps";
@@ -28,6 +29,11 @@ static bool isHevcManifest(const QString &mpdPath)
     return hevcRe.match(QString::fromUtf8(file.readAll())).hasMatch();
 }
 
+static QString formatRangeTime(qint64 ms)
+{
+    return QTime::fromMSecsSinceStartOfDay(int(ms)).toString(ms >= 3600000 ? "h:mm:ss.zzz" : "mm:ss.zzz");
+}
+
 #define EXPORT_SETTINGS QStringLiteral("BLumia"), QStringLiteral("PineappleSteamRecordingExporter")
 
 VideoExporter::VideoExporter(QObject *parent)
@@ -36,6 +42,8 @@ VideoExporter::VideoExporter(QObject *parent)
     , m_progress(0)
     , m_videoCodec(CopyStream)
     , m_videoBitrateMbps(30)
+    , m_rangeStartMs(-1)
+    , m_rangeEndMs(-1)
     , m_ffmpegProcess(new QProcess(this))
     , m_progressTimer(new QTimer(this))
     , m_startTime(0)
@@ -128,6 +136,22 @@ void VideoExporter::setVideoBitrateMbps(int mbps)
 
 bool VideoExporter::exportClipSegment(RecordingClip *clip, int segmentIndex, const QString &outputPath)
 {
+    return exportSegment(clip, segmentIndex, outputPath, -1, -1);
+}
+
+bool VideoExporter::exportClipRange(RecordingClip *clip, int segmentIndex, qint64 startMs, qint64 endMs,
+                                    const QString &outputPath)
+{
+    if (startMs < 0 || endMs <= startMs) {
+        setLastError(tr("Invalid export range"));
+        return false;
+    }
+    return exportSegment(clip, segmentIndex, outputPath, startMs, endMs);
+}
+
+bool VideoExporter::exportSegment(RecordingClip *clip, int segmentIndex, const QString &outputPath,
+                                  qint64 startMs, qint64 endMs)
+{
     if (!clip || !clip->isValid()) {
         setLastError(tr("Invalid recording clip"));
         return false;
@@ -160,6 +184,8 @@ bool VideoExporter::exportClipSegment(RecordingClip *clip, int segmentIndex, con
         .arg(segmentIndex + 1)
         .arg(clip->gameName().isEmpty() ? clip->appId() : clip->gameName());
 
+    m_rangeStartMs = startMs;
+    m_rangeEndMs = endMs;
     return startExport(mpdPath, finalOutputPath, operationName);
 }
 
@@ -464,6 +490,11 @@ bool VideoExporter::startExport(const QString &inputMpdPath, const QString &outp
     addToLog(tr("Starting export: %1").arg(operationName));
     addToLog(tr("Input: %1").arg(inputMpdPath));
     addToLog(tr("Output: %1").arg(finalOutputPath));
+    if (m_rangeEndMs > 0) {
+        addToLog(tr("Range: %1 - %2").arg(formatRangeTime(m_rangeStartMs), formatRangeTime(m_rangeEndMs)));
+        // FFmpeg's "Duration:" banner reports the whole input; progress is relative to the range
+        m_totalDurationMs = m_rangeEndMs - m_rangeStartMs;
+    }
     
     setupExportProcess(inputMpdPath, finalOutputPath);
     
@@ -495,8 +526,19 @@ QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, con
         args << "-filter_hw_device" << "va";
     }
 
+    // Seek on the input side so FFmpeg jumps straight to the right DASH
+    // chunk instead of reading the recording from the start. When copying,
+    // the cut snaps to the keyframe at or before the start.
+    if (m_rangeEndMs > 0) {
+        args << "-ss" << QString::number(m_rangeStartMs / 1000.0, 'f', 3);
+    }
+
     // Input file
     args << "-i" << inputMpdPath;
+
+    if (m_rangeEndMs > 0) {
+        args << "-t" << QString::number((m_rangeEndMs - m_rangeStartMs) / 1000.0, 'f', 3);
+    }
 
     const QString bitrate = QStringLiteral("%1M").arg(m_videoBitrateMbps);
     switch (m_videoCodec) {
@@ -591,6 +633,9 @@ bool VideoExporter::parseProgressLine(const QString &line)
     static const QRegularExpression durationRe(
         QStringLiteral("\\bDuration:\\s*(\\d+:\\d{1,2}:\\d{1,2}(?:\\.\\d+)?)"));
     const auto durationMatch = durationRe.match(line);
+    if (durationMatch.hasMatch() && m_rangeEndMs > 0) {
+        return true; // Total is the range length, set in startExport()
+    }
     if (durationMatch.hasMatch()) {
         const qint64 totalMs = parseTimeStringToMs(durationMatch.captured(1));
         if (totalMs > 0) {
@@ -812,5 +857,7 @@ void VideoExporter::resetState()
     m_lastOutTimeMs = 0;
     m_totalDurationMs = 0;
     m_progressBuffer.clear();
+    // m_rangeStartMs/m_rangeEndMs are set right before startExport(), which
+    // calls this, so they are deliberately not reset here
 }
 
