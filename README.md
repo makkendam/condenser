@@ -21,7 +21,7 @@ Steam's own recording export on Linux only looks for an NVIDIA encoder when re-e
 Condenser is built as a Flatpak:
 
 ```sh
-flatpak run org.flatpak.Builder --user --install --force-clean build packaging/flatpak/top.makkendam.Condenser.yml
+flatpak run org.flatpak.Builder --user --install --force-clean build packaging/flatpak/io.github.makkendam.Condenser.yml
 ```
 
 ## Credits

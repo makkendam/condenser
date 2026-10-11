@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     // Set application properties
     app.setApplicationName("Condenser");
     // Matches the .desktop file so Wayland taskbars show the right icon
-    app.setDesktopFileName(QStringLiteral("top.makkendam.Condenser"));
+    app.setDesktopFileName(QStringLiteral("io.github.makkendam.Condenser"));
     app.setApplicationVersion(QStringLiteral(PSRE_VERSION));
 
     // Set application icon

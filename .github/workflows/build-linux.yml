@@ -64,7 +64,7 @@ jobs:
     - name: Build Flatpak
       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        bundle: top.makkendam.Condenser.flatpak
-        manifest-path: packaging/flatpak/top.makkendam.Condenser.yml
+        bundle: io.github.makkendam.Condenser.flatpak
+        manifest-path: packaging/flatpak/io.github.makkendam.Condenser.yml
         cache-key: flatpak-builder-${{ github.sha }}
         upload-artifact: true

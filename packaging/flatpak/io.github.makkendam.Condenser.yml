@@ -1,4 +1,4 @@
-app-id: top.makkendam.Condenser
+app-id: io.github.makkendam.Condenser
 runtime: org.kde.Platform
 runtime-version: '6.11'
 sdk: org.kde.Sdk

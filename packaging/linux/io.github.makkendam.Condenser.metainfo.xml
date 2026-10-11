@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop-application">
+  <id>io.github.makkendam.Condenser</id>
+  <name>Condenser</name>
+  <summary>Cut clips from Steam game recordings</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <description>
+    <p>
+      Condenser turns hours of Steam background recordings into short clips. It opens on your
+      most recent session in a big player, so finding a moment and exporting it takes seconds.
+    </p>
+    <ul>
+      <li>Browse full sessions and Steam's saved clips side by side</li>
+      <li>Preview frames while hovering the timeline, and zoom in to find the exact moment</li>
+      <li>Mark a start and end, drag them to fine-tune, and export only that part</li>
+      <li>Export without re-encoding, or as H.264, HEVC or AV1 on the GPU (VA-API)</li>
+      <li>See where the recording froze because the game was in the background</li>
+    </ul>
+    <p>
+      Steam's own exporter can't re-encode on AMD and Intel GPUs on Linux; Condenser uses FFmpeg
+      with VA-API instead.
+    </p>
+    <p>
+      Condenser is a fork of Pineapple Steam Recording Exporter by Gary "BLumia" Wang. It adds
+      the editor, full background sessions, GPU export formats and timeline previews.
+    </p>
+    <p>
+      Condenser is not affiliated with Valve. Steam is a trademark of Valve Corporation.
+    </p>
+  </description>
+
+  <developer id="io.github.makkendam">
+    <name>makkendam</name>
+  </developer>
+
+  <launchable type="desktop-id">io.github.makkendam.Condenser.desktop</launchable>
+  <provides>
+    <binary>Condenser</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/makkendam/condenser</url>
+  <url type="bugtracker">https://github.com/makkendam/condenser/issues</url>
+  <url type="vcs-browser">https://github.com/makkendam/condenser</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/makkendam/condenser/v1.0.0/packaging/screenshots/editor.png</image>
+      <caption>A session in the editor, with a clip marked on the timeline</caption>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#8ab4f8</color>
+    <color type="primary" scheme_preference="dark">#1a3d6e</color>
+  </branding>
+
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Video</category>
+  </categories>
+  <keywords>
+    <keyword>steam</keyword>
+    <keyword>recording</keyword>
+    <keyword>clip</keyword>
+    <keyword>gameplay</keyword>
+    <keyword>export</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="1.0.0" date="2026-10-11">
+      <description>
+        <p>First Condenser release, forked from Pineapple Steam Recording Exporter 0.6.0.</p>
+        <ul>
+          <li>Editor as the main screen, opening on the most recent session</li>
+          <li>Full background sessions next to Steam's saved clips</li>
+          <li>Zoomable timeline with hover previews and draggable clip markers</li>
+          <li>Export to H.264, HEVC or AV1 on the GPU, with a bitrate slider</li>
+          <li>Frozen stretches marked on the timeline</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

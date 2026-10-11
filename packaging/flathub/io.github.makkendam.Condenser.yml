@@ -1,0 +1,40 @@
+app-id: io.github.makkendam.Condenser
+runtime: org.kde.Platform
+runtime-version: '6.11'
+sdk: org.kde.Sdk
+command: Condenser
+
+finish-args:
+  # X11 and Wayland support
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+
+  # Audio support
+  - --socket=pulseaudio
+
+  # Read Steam's recordings and settings (native, ~/.steam symlink, Flatpak Steam)
+  - --filesystem=~/.local/share/Steam:ro
+  - --filesystem=~/.var/app/com.valvesoftware.Steam/.local/share/Steam:ro
+  - --filesystem=~/.steam/steam:ro
+  # Steam's default recording folder is set by the user; exports go to ~/Videos
+  - --filesystem=xdg-videos
+
+  # D-Bus access for desktop integration
+  - --talk-name=org.freedesktop.FileManager1
+
+modules:
+  - name: Condenser
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    sources:
+      - type: git
+        url: https://github.com/makkendam/condenser.git
+        tag: v1.0.0
+        # Fill in after tagging: git rev-parse v1.0.0
+        commit: "0000000000000000000000000000000000000000"
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$

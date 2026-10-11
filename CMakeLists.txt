@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(Condenser VERSION 0.6.0 LANGUAGES CXX)
+project(Condenser VERSION 1.0.0 LANGUAGES CXX)
 
 # Include GNUInstallDirs for standard installation directories
 include(GNUInstallDirs)
@@ -131,24 +131,24 @@ else()
     )
 
     # Install desktop file
-    install(FILES packaging/linux/top.makkendam.Condenser.desktop
+    install(FILES packaging/linux/io.github.makkendam.Condenser.desktop
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications
     )
 
     # Install AppStream metainfo
-    install(FILES packaging/linux/top.makkendam.Condenser.metainfo.xml
+    install(FILES packaging/linux/io.github.makkendam.Condenser.metainfo.xml
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo
     )
 
     # Install icon
     install(FILES qml/app_icon.png
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/128x128/apps
-        RENAME top.makkendam.Condenser.png
+        RENAME io.github.makkendam.Condenser.png
     )
     # Install SVG icon in scalable directory according to Freedesktop.org icon theme specification
     install(FILES qml/app_icon.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps
-        RENAME top.makkendam.Condenser.svg
+        RENAME io.github.makkendam.Condenser.svg
     )
 
     # # Install documentation

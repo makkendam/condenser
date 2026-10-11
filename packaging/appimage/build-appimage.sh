@@ -5,10 +5,10 @@ set -e
 
 # Configuration
 APP_NAME="Condenser"
-APP_ID="top.makkendam.Condenser"
+APP_ID="io.github.makkendam.Condenser"
 BUILD_DIR="build-appimage"
 INSTALL_DIR="AppDir"
-DESKTOP_FILE_PATH="packaging/linux/top.makkendam.Condenser.desktop"
+DESKTOP_FILE_PATH="packaging/linux/io.github.makkendam.Condenser.desktop"
 
 # Colors for output
 RED='\033[0;31m'
