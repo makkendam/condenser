@@ -297,7 +297,7 @@ Page {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                height: 84
+                height: timeline.zoomed ? 104 : 84
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#00000000" }
                     GradientStop { position: 1.0; color: "#b0000000" }
@@ -319,9 +319,54 @@ Page {
                 readonly property real duration: Math.max(1, mediaPlayer.duration)
                 property real dragPosition: -1
                 readonly property real shownPosition: dragPosition >= 0 ? dragPosition : mediaPlayer.position
+                property bool markerDragging: false
+
+                // Zoom: the timeline shows viewStart .. viewEnd of the recording.
+                // Scroll on it to zoom around the mouse, down to a minute wide.
+                readonly property real minSpanMs: Math.min(duration, 60000)
+                property real viewSpan: duration
+                property real viewStart: 0
+                readonly property real span: Math.max(minSpanMs, Math.min(duration, viewSpan))
+                readonly property real viewEnd: viewStart + span
+                readonly property bool zoomed: span < duration - 1
 
                 function xFor(ms) {
-                    return Math.max(0, Math.min(width, ms / duration * width))
+                    return Math.max(0, Math.min(width, (ms - viewStart) / span * width))
+                }
+
+                function msAtX(x) {
+                    return viewStart + Math.max(0, Math.min(1, x / width)) * span
+                }
+
+                function inView(ms) {
+                    return ms >= viewStart && ms <= viewEnd
+                }
+
+                function setView(start, newSpan) {
+                    newSpan = Math.max(minSpanMs, Math.min(duration, newSpan))
+                    viewSpan = newSpan
+                    viewStart = Math.max(0, Math.min(duration - newSpan, start))
+                }
+
+                function zoomAt(x, factor) {
+                    var anchorMs = msAtX(x)
+                    var newSpan = Math.max(minSpanMs, Math.min(duration, span * factor))
+                    setView(anchorMs - x / width * newSpan, newSpan)
+                }
+
+                Connections {
+                    target: mediaPlayer
+                    function onDurationChanged() { timeline.setView(0, timeline.duration) }
+                    // Page along when playback or a seek leaves the visible part
+                    function onPositionChanged() {
+                        if (!timeline.zoomed || timeline.dragPosition >= 0 || timeline.markerDragging) {
+                            return
+                        }
+                        var position = mediaPlayer.position
+                        if (position < timeline.viewStart || position > timeline.viewEnd) {
+                            timeline.setView(position - timeline.span * 0.1, timeline.span)
+                        }
+                    }
                 }
 
                 // Labeled marks every N seconds, N picked so labels stay ~90px apart
@@ -329,7 +374,7 @@ Page {
                     var steps = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200]
                     var maxTicks = Math.max(1, Math.floor(width / 90))
                     for (var i = 0; i < steps.length; ++i) {
-                        if (duration / (steps[i] * 1000) <= maxTicks) {
+                        if (span / (steps[i] * 1000) <= maxTicks) {
                             return steps[i] * 1000
                         }
                     }
@@ -349,11 +394,15 @@ Page {
                 // Mouse position over the timeline in ms, -1 when not hovering
                 property real hoverPosition: -1
 
+                // Only the marks in view; 0 and the very end get none
+                readonly property int firstTick: Math.max(1, Math.ceil(viewStart / tickIntervalMs))
+                readonly property int lastTick: Math.floor(Math.min(viewEnd, duration - 1) / tickIntervalMs)
+
                 Repeater {
-                    model: timeline.enabled ? Math.floor((timeline.duration - 1) / timeline.tickIntervalMs) : 0
+                    model: timeline.enabled ? Math.max(0, timeline.lastTick - timeline.firstTick + 1) : 0
 
                     Item {
-                        readonly property real ms: (index + 1) * timeline.tickIntervalMs
+                        readonly property real ms: (timeline.firstTick + index) * timeline.tickIntervalMs
                         x: timeline.xFor(ms)
                         y: 0
                         height: timeline.height
@@ -400,6 +449,7 @@ Page {
                 Repeater {
                     model: timeline.enabled ? thumbnails.frozenRanges : []
                     Rectangle {
+                        visible: modelData.endMs > timeline.viewStart && modelData.startMs < timeline.viewEnd
                         anchors.verticalCenter: parent.verticalCenter
                         x: timeline.xFor(modelData.startMs)
                         width: Math.max(2, timeline.xFor(modelData.endMs) - x)
@@ -411,7 +461,7 @@ Page {
 
                 // Selected clip range
                 Rectangle {
-                    visible: root.hasRange
+                    visible: root.hasRange && root.rangeEndMs > timeline.viewStart && root.rangeStartMs < timeline.viewEnd
                     anchors.verticalCenter: parent.verticalCenter
                     x: timeline.xFor(root.rangeStartMs)
                     width: timeline.xFor(root.rangeEndMs) - x
@@ -420,21 +470,56 @@ Page {
                     color: "#e0ffffff"
                 }
 
+                // Clip start (index 0) and end (index 1); drag them to adjust the clip
                 Repeater {
-                    model: [root.rangeStartMs, root.rangeEndMs]
+                    model: 2
                     Rectangle {
-                        visible: modelData >= 0
-                        x: timeline.xFor(modelData) - width / 2
+                        id: marker
+                        readonly property real ms: index === 0 ? root.rangeStartMs : root.rangeEndMs
+                        visible: ms >= 0 && timeline.inView(ms)
+                        x: timeline.xFor(ms) - width / 2
+                        z: 2
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 3
+                        width: markerArea.containsMouse || markerArea.pressed ? 5 : 3
                         height: 22
                         radius: 1
                         color: "white"
+
+                        MouseArea {
+                            id: markerArea
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 32
+                            hoverEnabled: true
+                            preventStealing: true
+                            cursorShape: Qt.SizeHorCursor
+
+                            onPressed: timeline.markerDragging = true
+                            onPositionChanged: function(mouse) {
+                                if (!pressed) {
+                                    return
+                                }
+                                var ms = timeline.msAtX(mapToItem(timeline, mouse.x, 0).x)
+                                if (index === 0) {
+                                    root.rangeStartMs = root.rangeEndMs >= 0 ? Math.min(ms, root.rangeEndMs - 500) : ms
+                                } else {
+                                    root.rangeEndMs = Math.max(ms, root.rangeStartMs + 500)
+                                }
+                                // Preview frame of where the marker is going
+                                timeline.hoverPosition = marker.ms
+                            }
+                            onReleased: {
+                                timeline.markerDragging = false
+                                timeline.hoverPosition = -1
+                                root.seekTo(marker.ms)
+                            }
+                        }
                     }
                 }
 
                 // Playhead
                 Rectangle {
+                    visible: timeline.inView(timeline.shownPosition)
                     x: timeline.xFor(timeline.shownPosition) - width / 2
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
@@ -449,7 +534,7 @@ Page {
                     visible: timeline.hoverPosition >= 0
                     x: Math.max(-16, Math.min(timeline.width + 16 - width,
                                               timeline.xFor(timeline.hoverPosition) - width / 2))
-                    y: -height - 18
+                    y: -height - (timeline.zoomed ? 34 : 18)
                     width: 240 + 6
                     height: hoverColumn.implicitHeight + 6
                     radius: 4
@@ -501,7 +586,15 @@ Page {
                     cursorShape: Qt.PointingHandCursor
 
                     function msAt(mouseX) {
-                        return Math.max(0, Math.min(1, mouseX / width)) * timeline.duration
+                        return timeline.msAtX(mouseX)
+                    }
+
+                    onWheel: function(wheel) {
+                        var steps = wheel.angleDelta.y / 120
+                        if (steps !== 0) {
+                            timeline.zoomAt(wheel.x, Math.pow(0.8, steps))
+                            timeline.hoverPosition = msAt(wheel.x)
+                        }
                     }
 
                     onExited: timeline.hoverPosition = -1
@@ -520,6 +613,85 @@ Page {
                         timeline.dragPosition = -1
                         if (!containsMouse) {
                             timeline.hoverPosition = -1
+                        }
+                    }
+                }
+
+                // Overview of the whole recording while zoomed in: the visible
+                // part is highlighted; click or drag to move it
+                Item {
+                    id: overview
+                    visible: timeline.zoomed
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    y: -28
+                    height: 6
+
+                    function xFor(ms) {
+                        return Math.max(0, Math.min(width, ms / timeline.duration * width))
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 3
+                        color: "#40ffffff"
+                    }
+
+                    Repeater {
+                        model: overview.visible ? thumbnails.frozenRanges : []
+                        Rectangle {
+                            x: overview.xFor(modelData.startMs)
+                            width: Math.max(1, overview.xFor(modelData.endMs) - x)
+                            height: parent.height
+                            color: "#5a5a64"
+                        }
+                    }
+
+                    Rectangle {
+                        visible: root.hasRange
+                        x: overview.xFor(root.rangeStartMs)
+                        width: Math.max(2, overview.xFor(root.rangeEndMs) - x)
+                        height: parent.height
+                        color: "#e0ffffff"
+                    }
+
+                    // Visible part
+                    Rectangle {
+                        x: overview.xFor(timeline.viewStart)
+                        width: Math.max(4, overview.xFor(timeline.viewEnd) - x)
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: parent.height + 4
+                        radius: 3
+                        color: "transparent"
+                        border.color: "#8ab4f8"
+                        border.width: 2
+                    }
+
+                    Rectangle {
+                        x: overview.xFor(mediaPlayer.position) - 1
+                        width: 2
+                        height: parent.height
+                        color: "white"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.topMargin: -6
+                        anchors.bottomMargin: -6
+                        cursorShape: Qt.PointingHandCursor
+                        preventStealing: true
+
+                        function centerOn(mouseX) {
+                            var ms = Math.max(0, Math.min(1, mouseX / width)) * timeline.duration
+                            timeline.setView(ms - timeline.span / 2, timeline.span)
+                        }
+                        onPressed: function(mouse) { centerOn(mouse.x) }
+                        onPositionChanged: function(mouse) { if (pressed) centerOn(mouse.x) }
+                        onWheel: function(wheel) {
+                            var steps = wheel.angleDelta.y / 120
+                            if (steps !== 0) {
+                                timeline.zoomAt(timeline.xFor(timeline.viewStart + timeline.span / 2), Math.pow(0.8, steps))
+                            }
                         }
                     }
                 }
