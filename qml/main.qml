@@ -25,8 +25,6 @@ ApplicationWindow {
     property var selectedClip: null
     property int selectedSegmentIndex: -1
     property var selectedExportedVideo: null
-    // Open the newest background recording once, right after the first scan
-    property bool latestRecordingOpened: false
     
     // Auto-fullscreen in SteamOS game mode
     Component.onCompleted: {
@@ -44,14 +42,25 @@ ApplicationWindow {
             id: systemCheckPage
             
             onSystemCheckPassed: {
-                // Move to recording list page
-                pageStack.push(recordingListComponent)
-                currentPage = "recordingList"
+                // The editor is the main screen
+                pageStack.push(editorComponent)
+                currentPage = "editor"
             }
         }
     }
     
     // Components for different pages
+    Component {
+        id: editorComponent
+
+        EditorPage {
+            onExportedVideosRequested: {
+                pageStack.push(exportedVideosComponent)
+                currentPage = "exportedVideos"
+            }
+        }
+    }
+
     Component {
         id: recordingListComponent
         
@@ -145,7 +154,7 @@ ApplicationWindow {
             
             onBackRequested: {
                 pageStack.pop()
-                currentPage = "recordingList"
+                currentPage = "editor"
                 selectedExportedVideo = null
             }
         }
@@ -172,30 +181,12 @@ ApplicationWindow {
         }
     }
     
-    Connections {
-        target: recordingManager
-
-        function onScanCompleted() {
-            if (latestRecordingOpened || currentPage !== "recordingList") {
-                return
-            }
-            latestRecordingOpened = true
-            var latest = recordingManager.latestBackgroundRecording()
-            if (latest) {
-                selectedClip = latest
-                selectedSegmentIndex = 0
-                pageStack.push(previewAndExportComponent)
-                currentPage = "previewAndExport"
-            }
-        }
-    }
-
     // Global shortcuts
     Shortcut {
         sequences: [StandardKey.Back]
-        enabled: pageStack.depth > 1
+        enabled: pageStack.depth > 2
         onActivated: {
-            if (pageStack.depth > 1) {
+            if (pageStack.depth > 2) {
                 pageStack.pop()
                 updateCurrentPage()
             }
@@ -204,9 +195,9 @@ ApplicationWindow {
     
     Shortcut {
         sequences: ["Escape"]
-        enabled: pageStack.depth > 1
+        enabled: pageStack.depth > 2
         onActivated: {
-            if (pageStack.depth > 1) {
+            if (pageStack.depth > 2) {
                 pageStack.pop()
                 updateCurrentPage()
             }
@@ -220,7 +211,7 @@ ApplicationWindow {
     
     Shortcut {
         sequences: ["Ctrl+R"]
-        enabled: currentPage === "recordingList"
+        enabled: currentPage === "editor"
         onActivated: {
             if (recordingManager) {
                 recordingManager.refreshClips()
@@ -235,7 +226,7 @@ ApplicationWindow {
             currentPage = "systemCheck"
             break
         case 2:
-            currentPage = "recordingList"
+            currentPage = "editor"
             break
         case 3:
             if (selectedClip && selectedClip.segmentCount > 1) {
@@ -387,6 +378,8 @@ ApplicationWindow {
                     switch (currentPage) {
                     case "systemCheck":
                         return qsTr("System Check")
+                    case "editor":
+                        return recordingManager && recordingManager.isScanning ? qsTr("Scanning for recordings…") : ""
                     case "recordingList":
                         return qsTr("Recording List") + 
                                (recordingManager ? " (" + recordingManager.clipCount + " clips)" : "")

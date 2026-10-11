@@ -65,6 +65,7 @@ qt_add_qml_module(PineappleSteamRecordingExporter
     QML_FILES
         qml/main.qml
         qml/SystemCheckPage.qml
+        qml/EditorPage.qml
         qml/RecordingListPage.qml
         qml/ClipSelectionPage.qml
         qml/PreviewAndExportPage.qml
