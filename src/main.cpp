@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     // Register C++ types for QML
-    qmlRegisterType<SteamRecordingManager>("Condenser", 1, 0, "SteamRecordingManager");
-    qmlRegisterType<SystemChecker>("Condenser", 1, 0, "SystemChecker");
-    qmlRegisterType<VideoExporter>("Condenser", 1, 0, "VideoExporter");
-    qmlRegisterType<RecordingClip>("Condenser", 1, 0, "RecordingClip");
-    qmlRegisterType<RecordingFilterModel>("Condenser", 1, 0, "RecordingFilterModel");
+    qmlRegisterType<SteamRecordingManager>("CondenserApp", 1, 0, "SteamRecordingManager");
+    qmlRegisterType<SystemChecker>("CondenserApp", 1, 0, "SystemChecker");
+    qmlRegisterType<VideoExporter>("CondenserApp", 1, 0, "VideoExporter");
+    qmlRegisterType<RecordingClip>("CondenserApp", 1, 0, "RecordingClip");
+    qmlRegisterType<RecordingFilterModel>("CondenserApp", 1, 0, "RecordingFilterModel");
 
     // Create and expose global instances to QML
     SystemChecker systemChecker;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     engine.addImportPath("qrc:/");
 
     // Load the main QML file
-    const QUrl url(QStringLiteral("qrc:/Condenser/qml/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/CondenserApp/qml/main.qml"));
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {

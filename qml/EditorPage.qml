@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
-import Condenser
+import CondenserApp
 import "components"
 
 // Main screen: a big player with a clip editor, and the recordings to pick

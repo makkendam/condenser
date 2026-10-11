@@ -48,7 +48,7 @@ qt_add_executable(Condenser
 
 # Add QML module
 qt_add_qml_module(Condenser
-    URI Condenser
+    URI CondenserApp
     VERSION 1.0
     QML_FILES
         qml/main.qml
