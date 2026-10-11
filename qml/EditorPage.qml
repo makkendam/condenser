@@ -538,7 +538,8 @@ Page {
                 id: clipRow
                 anchors.left: parent.left
                 anchors.leftMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
+                // Line up with the transport buttons rather than the bar, as the time sits below them
+                y: transport.y + transportButtons.y + (transportButtons.height - height) / 2
                 width: transport.x - 16 - anchors.leftMargin
                 spacing: 6
 
@@ -561,7 +562,10 @@ Page {
                 }
 
                 Label {
+                    // Only as wide as the text, so repeat/clear sit right after it;
+                    // it still shrinks and elides when space runs out
                     Layout.fillWidth: true
+                    Layout.maximumWidth: implicitWidth
                     elide: Text.ElideRight
                     font.pixelSize: 12
                     color: root.hasRange ? Material.foreground : Material.hintTextColor
@@ -604,6 +608,8 @@ Page {
                         root.clearRange()
                     }
                 }
+
+                Item { Layout.fillWidth: true }
             }
 
             ColumnLayout {
@@ -612,6 +618,7 @@ Page {
                 spacing: -6
 
                 RowLayout {
+                    id: transportButtons
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 2
 
@@ -672,7 +679,8 @@ Page {
                 id: outputRow
                 anchors.right: parent.right
                 anchors.rightMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
+                // Line up with the transport buttons rather than the bar, as the time sits below them
+                y: transport.y + transportButtons.y + (transportButtons.height - height) / 2
                 spacing: 6
 
                 ToolButton {
