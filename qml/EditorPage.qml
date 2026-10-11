@@ -63,10 +63,18 @@ Page {
         }
     }
 
-    function seekBy(ms) {
-        if (mediaPlayer.seekable) {
-            mediaPlayer.setPosition(Math.max(0, Math.min(mediaPlayer.duration, mediaPlayer.position + ms)))
+    function seekTo(ms) {
+        if (!mediaPlayer.seekable) {
+            return
         }
+        if (mediaPlayer.playbackState === MediaPlayer.StoppedState) {
+            mediaPlayer.pause() // Stopped shows no frame; paused shows the one we seek to
+        }
+        mediaPlayer.setPosition(Math.max(0, Math.min(mediaPlayer.duration, ms)))
+    }
+
+    function seekBy(ms) {
+        seekTo(mediaPlayer.position + ms)
     }
 
     function openLatest() {
@@ -221,6 +229,13 @@ Page {
                     playerError.text = qsTr("Preview Error: %1").arg(errorString)
                 }
                 onSourceChanged: playerError.text = ""
+                onMediaStatusChanged: {
+                    // A stopped player shows nothing and ignores seeks; paused shows the
+                    // current frame, so the first frame appears and timeline clicks work
+                    if (mediaStatus === MediaPlayer.LoadedMedia && playbackState === MediaPlayer.StoppedState) {
+                        pause()
+                    }
+                }
             }
 
             VideoOutput {
@@ -468,9 +483,7 @@ Page {
                         }
                     }
                     onReleased: function(mouse) {
-                        if (mediaPlayer.seekable) {
-                            mediaPlayer.setPosition(msAt(mouse.x))
-                        }
+                        root.seekTo(msAt(mouse.x))
                         timeline.dragPosition = -1
                         if (!containsMouse) {
                             timeline.hoverPosition = -1
