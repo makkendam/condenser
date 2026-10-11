@@ -18,7 +18,7 @@ ApplicationWindow {
     
     Material.theme: Material.Dark
     Material.primary: "#121212"
-    Material.accent: "#2e2e2e"
+    Material.accent: "#d0d0d0"
     
     // Global properties
     property string currentPage: "editor"
@@ -411,7 +411,6 @@ ApplicationWindow {
             }
             
             BusyIndicator {
-                Material.accent: "#d0d0d0"
                 visible: (systemChecker && systemChecker.isChecking) ||
                          (recordingManager && recordingManager.isScanning) ||
                          (videoExporter && videoExporter.isExporting) ||

@@ -672,6 +672,10 @@ QList<SteamUser> SteamRecordingManager::parseSteamUsers(const QString &steamPath
             qDebug() << "SteamRecordingManager::parseSteamUsers() - Skipping non-numeric directory:" << userDir;
             continue; // Skip non-numeric directories
         }
+        if (userDir == QLatin1String("0")) {
+            // Steam's placeholder for "nobody logged in", never a real account
+            continue;
+        }
 
         qDebug() << "SteamRecordingManager::parseSteamUsers() - Processing user directory:" << userDir;
 

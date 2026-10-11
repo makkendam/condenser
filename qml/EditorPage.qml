@@ -119,8 +119,9 @@ Page {
 
     // Several Steam accounts and none picked yet: let the user choose
     function askForUserIfNeeded() {
-        if (recordingManager && recordingManager.hasMultipleUsers
-            && (!recordingManager.selectedUserId || recordingManager.gameRecordingsPath === "")) {
+        // Only when no account could be picked automatically (none has recordings);
+        // gameRecordingsPath is filled in later, so it can't be used to decide this
+        if (recordingManager && recordingManager.hasMultipleUsers && !recordingManager.selectedUserId) {
             userSelectionDialog.open()
         }
     }
@@ -227,7 +228,6 @@ Page {
             }
 
             BusyIndicator {
-                Material.accent: "#d0d0d0"
                 anchors.centerIn: parent
                 running: mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
                 visible: running
@@ -482,7 +482,6 @@ Page {
                 }
 
                 Slider {
-                    Material.accent: "#d0d0d0"
                     Layout.preferredWidth: 90
                     from: 0
                     to: 1
@@ -748,7 +747,6 @@ Page {
                 spacing: 4
 
                 ProgressBar {
-                    Material.accent: "#d0d0d0"
                     Layout.fillWidth: true
                     value: videoExporter ? videoExporter.progress / 100.0 : 0
                 }

@@ -61,7 +61,6 @@ Page {
                 }
 
                 BusyIndicator {
-                    Material.accent: "#d0d0d0"
                     anchors.centerIn: parent
                     running: recordingManager ? recordingManager.isScanning : false
                     visible: running
@@ -157,7 +156,6 @@ Page {
                     spacing: 16
 
                     BusyIndicator {
-                        Material.accent: "#d0d0d0"
                         running: true
                         Layout.alignment: Qt.AlignHCenter
                         implicitWidth: 64

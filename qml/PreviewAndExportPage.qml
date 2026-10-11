@@ -155,7 +155,6 @@ Page {
 
                         // Loading/Buffering indicator
                         BusyIndicator {
-                            Material.accent: "#d0d0d0"
                             anchors.centerIn: parent
                             running: mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
                             visible: running
@@ -230,7 +229,6 @@ Page {
                         }
 
                         Slider {
-                            Material.accent: "#d0d0d0"
                             id: positionSlider
                             Layout.fillWidth: true
                             enabled: root.mediaControlsEnabled && mediaPlayer.seekable
@@ -265,7 +263,6 @@ Page {
                         }
 
                         Slider {
-                            Material.accent: "#d0d0d0"
                             Layout.preferredWidth: 100
                             from: 0
                             to: 1
@@ -356,7 +353,6 @@ Page {
                         visible: videoExporter && videoExporter.isExporting
 
                         BusyIndicator {
-                            Material.accent: "#d0d0d0"
                             running: true
                             implicitWidth: 24
                             implicitHeight: 24
@@ -372,7 +368,6 @@ Page {
                             }
 
                             ProgressBar {
-                                Material.accent: "#d0d0d0"
                                 Layout.fillWidth: true
                                 value: videoExporter ? videoExporter.progress / 100.0 : 0
 

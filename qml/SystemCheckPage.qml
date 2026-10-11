@@ -46,7 +46,6 @@ Page {
         
         // Progress indicator
         ProgressBar {
-            Material.accent: "#d0d0d0"
             Layout.fillWidth: true
             Layout.maximumWidth: 400
             Layout.alignment: Qt.AlignHCenter
