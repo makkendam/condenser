@@ -180,7 +180,7 @@ if(WIN32)
     set(CPACK_GENERATOR "NSIS;ZIP")
     set(CPACK_NSIS_DISPLAY_NAME "Condenser")
     set(CPACK_NSIS_PACKAGE_NAME "Condenser")
-    set(CPACK_NSIS_CONTACT "97677573+makkendam@users.noreply.github.com")
+    set(CPACK_NSIS_CONTACT "https://github.com/makkendam/condenser")
     set(CPACK_NSIS_MODIFY_PATH ON)
     set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 else()
@@ -194,7 +194,7 @@ else()
 
     # RPM package configuration
     set(CPACK_RPM_PACKAGE_GROUP "Applications/Multimedia")
-    set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+    set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-only")
     set(CPACK_RPM_PACKAGE_REQUIRES "ffmpeg, qt6-qtbase, qt6-qtdeclarative, qt6-qtmultimedia")
 endif()
 
