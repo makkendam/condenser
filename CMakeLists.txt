@@ -28,6 +28,7 @@ set(SOURCES
     src/httpserver.cpp
     src/qvdfparser.cpp
     src/languagemanager.cpp
+    src/recordingfiltermodel.cpp
 )
 
 # Header files
@@ -41,6 +42,7 @@ set(HEADERS
     src/httpserver.h
     src/qvdfparser.h
     src/languagemanager.h
+    src/recordingfiltermodel.h
 )
 
 # Create the executable

@@ -133,6 +133,8 @@ private:
     QString m_ffmpegPath;
     VideoCodec m_videoCodec;
     int m_videoBitrateMbps;
+    // Bitrate used for the current export: m_videoBitrateMbps, capped to the source
+    int m_exportBitrateMbps;
     // Range of the current export, -1 when exporting the whole segment
     qint64 m_rangeStartMs;
     qint64 m_rangeEndMs;

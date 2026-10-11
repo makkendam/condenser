@@ -124,6 +124,28 @@ QString RecordingClip::getSegmentMpdPath(int segmentIndex) const
     return ensureStaticMpd(mpdPath);
 }
 
+int RecordingClip::videoBitrateMbps(int segmentIndex) const
+{
+    if (segmentIndex < 0 || segmentIndex >= m_segments.size()) {
+        return 0;
+    }
+
+    QFile mpdFile(QDir(m_segments.at(segmentIndex)).absoluteFilePath("session.mpd"));
+    if (!mpdFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return 0;
+    }
+    const QString content = QString::fromUtf8(mpdFile.readAll());
+
+    // <AdaptationSet ... contentType="video" ...> <Representation ... bandwidth="32000000" ...>
+    static const QRegularExpression videoRepresentationRe(
+        QStringLiteral(R"re(contentType="video"[^>]*>\s*<Representation\b[^>]*\bbandwidth="(\d+)")re"));
+    const QRegularExpressionMatch match = videoRepresentationRe.match(content);
+    if (!match.hasMatch()) {
+        return 0;
+    }
+    return int(qRound(match.captured(1).toLongLong() / 1000000.0));
+}
+
 QUrl RecordingClip::getSegmentMpdUrl(int segmentIndex) const
 {
     QString mpdPath = getSegmentMpdPath(segmentIndex);

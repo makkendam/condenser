@@ -60,6 +60,8 @@ public:
     Q_INVOKABLE bool loadFromPath(const QString &clipPath);
     Q_INVOKABLE QString getSegmentMpdPath(int segmentIndex) const;
     Q_INVOKABLE QUrl getSegmentMpdUrl(int segmentIndex) const;
+    // Video bitrate Steam recorded the segment with, in whole Mbps (0 if unknown)
+    Q_INVOKABLE int videoBitrateMbps(int segmentIndex) const;
     Q_INVOKABLE QUrl getThumbnailUrl() const;
     Q_INVOKABLE void refreshSegments();
     Q_INVOKABLE void refreshGameInfo(const QString &steamPath);

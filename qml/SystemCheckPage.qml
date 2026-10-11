@@ -30,7 +30,7 @@ Page {
                     text: qsTr("Pineapple Steam Recording Exporter")
                     font.pixelSize: 28
                     font.weight: Font.Bold
-                    color: Material.primary
+                    color: Material.foreground
                     Layout.alignment: Qt.AlignHCenter
                 }
                 
@@ -46,6 +46,7 @@ Page {
         
         // Progress indicator
         ProgressBar {
+            Material.accent: "#d0d0d0"
             Layout.fillWidth: true
             Layout.maximumWidth: 400
             Layout.alignment: Qt.AlignHCenter
@@ -288,7 +289,8 @@ Page {
     
     Timer {
         id: proceedTimer
-        interval: 1000
+        // Only long enough to not flash the page; the recordings are what people came for
+        interval: 100
         repeat: false
         onTriggered: {
             if (systemChecker && systemChecker.allChecksPass) {

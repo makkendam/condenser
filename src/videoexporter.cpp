@@ -42,6 +42,7 @@ VideoExporter::VideoExporter(QObject *parent)
     , m_progress(0)
     , m_videoCodec(CopyStream)
     , m_videoBitrateMbps(30)
+    , m_exportBitrateMbps(30)
     , m_rangeStartMs(-1)
     , m_rangeEndMs(-1)
     , m_ffmpegProcess(new QProcess(this))
@@ -186,6 +187,10 @@ bool VideoExporter::exportSegment(RecordingClip *clip, int segmentIndex, const Q
 
     m_rangeStartMs = startMs;
     m_rangeEndMs = endMs;
+
+    // Re-encoding above the source bitrate only makes the file bigger
+    const int sourceMbps = clip->videoBitrateMbps(segmentIndex);
+    m_exportBitrateMbps = sourceMbps > 0 ? qMin(m_videoBitrateMbps, sourceMbps) : m_videoBitrateMbps;
     return startExport(mpdPath, finalOutputPath, operationName);
 }
 
@@ -540,7 +545,7 @@ QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, con
         args << "-t" << QString::number((m_rangeEndMs - m_rangeStartMs) / 1000.0, 'f', 3);
     }
 
-    const QString bitrate = QStringLiteral("%1M").arg(m_videoBitrateMbps);
+    const QString bitrate = QStringLiteral("%1M").arg(m_exportBitrateMbps);
     switch (m_videoCodec) {
     case H264Hardware:
         // Steam's own exporter only looks for NVENC when re-encoding on Linux,
@@ -551,7 +556,7 @@ QStringList VideoExporter::buildFfmpegArguments(const QString &inputMpdPath, con
         break;
     case H264Software:
         args << "-c:v" << "libx264" << "-preset" << "veryfast";
-        args << "-b:v" << bitrate << "-maxrate" << bitrate << "-bufsize" << QStringLiteral("%1M").arg(m_videoBitrateMbps * 2);
+        args << "-b:v" << bitrate << "-maxrate" << bitrate << "-bufsize" << QStringLiteral("%1M").arg(m_exportBitrateMbps * 2);
         args << "-pix_fmt" << "yuv420p";
         args << "-c:a" << "copy";
         break;

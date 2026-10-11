@@ -80,6 +80,7 @@ public:
     Q_INVOKABLE void refreshClips();
     Q_INVOKABLE void clearClips();
     Q_INVOKABLE RecordingClip* getClip(int index) const;
+    Q_INVOKABLE RecordingClip* latestBackgroundRecording() const;
     Q_INVOKABLE QStringList getClipsByGame(const QString &appId) const;
     Q_INVOKABLE int getClipIndex(RecordingClip *clip) const;
     Q_INVOKABLE void refreshGameInfo();

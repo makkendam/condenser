@@ -22,7 +22,7 @@ ItemDelegate {
         color: root.isSelected ? 
                Material.color(Material.Primary, Material.Shade900) :
                (root.hovered ? Material.color(Material.Grey, Material.Shade800) : Material.backgroundColor)
-        border.color: root.isSelected ? Material.primary : Material.dividerColor
+        border.color: root.isSelected ? Material.foreground : Material.dividerColor
         border.width: root.isSelected ? 2 : 1
         radius: 8
         
@@ -59,7 +59,7 @@ ItemDelegate {
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
                 
-                color: root.isSelected ? Material.primary : Material.accent
+                color: root.isSelected ? Material.foreground : Material.foreground
                 radius: 16
                 
                 Label {
@@ -82,7 +82,7 @@ ItemDelegate {
                 visible: root.isSelected
                 text: "✓"
                 font.pixelSize: 16
-                color: Material.primary
+                color: Material.foreground
             }
         }
         
@@ -194,7 +194,7 @@ ItemDelegate {
     Rectangle {
         anchors.fill: parent
         color: "transparent"
-        border.color: Material.primary
+        border.color: Material.foreground
         border.width: 2
         radius: 8
         opacity: root.isSelected ? 1 : 0

@@ -173,6 +173,7 @@ Page {
                         }
                         
                         Slider {
+                            Material.accent: "#d0d0d0"
                             Layout.fillWidth: true
                             from: 0
                             to: mediaPlayer.duration
@@ -197,6 +198,7 @@ Page {
                         }
                         
                         Slider {
+                            Material.accent: "#d0d0d0"
                             Layout.preferredWidth: 100
                             from: 0
                             to: 1
@@ -228,6 +230,7 @@ Page {
                         }
                         
                         BusyIndicator {
+                            Material.accent: "#d0d0d0"
                             visible: mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
                             running: visible
                             implicitWidth: 24

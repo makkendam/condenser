@@ -161,6 +161,18 @@ RecordingClip* SteamRecordingManager::getClip(int index) const
     return m_clips.at(index);
 }
 
+RecordingClip* SteamRecordingManager::latestBackgroundRecording() const
+{
+    RecordingClip *latest = nullptr;
+    for (RecordingClip *clip : m_clips) {
+        if (clip && clip->isBackgroundRecording()
+            && (!latest || clip->recordingDate() > latest->recordingDate())) {
+            latest = clip;
+        }
+    }
+    return latest;
+}
+
 QStringList SteamRecordingManager::getClipsByGame(const QString &appId) const
 {
     QStringList clipPaths;

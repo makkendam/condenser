@@ -8,22 +8,25 @@ ApplicationWindow {
     id: mainWindow
     
     visible: true
-    width: 1200
-    height: 800
+    // Tall enough to show the whole preview & export page without scrolling
+    width: 1280
+    height: 1000
     minimumWidth: 800
     minimumHeight: 600
     
     title: qsTr("Pineapple Steam Recording Exporter")
     
     Material.theme: Material.Dark
-    Material.primary: Material.Orange
-    Material.accent: Material.DeepOrange
+    Material.primary: "#121212"
+    Material.accent: "#2e2e2e"
     
     // Global properties
     property string currentPage: "systemCheck"
     property var selectedClip: null
     property int selectedSegmentIndex: -1
     property var selectedExportedVideo: null
+    // Open the newest background recording once, right after the first scan
+    property bool latestRecordingOpened: false
     
     // Auto-fullscreen in SteamOS game mode
     Component.onCompleted: {
@@ -169,6 +172,24 @@ ApplicationWindow {
         }
     }
     
+    Connections {
+        target: recordingManager
+
+        function onScanCompleted() {
+            if (latestRecordingOpened || currentPage !== "recordingList") {
+                return
+            }
+            latestRecordingOpened = true
+            var latest = recordingManager.latestBackgroundRecording()
+            if (latest) {
+                selectedClip = latest
+                selectedSegmentIndex = 0
+                pageStack.push(previewAndExportComponent)
+                currentPage = "previewAndExport"
+            }
+        }
+    }
+
     // Global shortcuts
     Shortcut {
         sequences: [StandardKey.Back]
@@ -406,10 +427,11 @@ ApplicationWindow {
                 visible: videoExporter && videoExporter.isExporting
                 text: videoExporter ? videoExporter.currentOperation + " (" + videoExporter.progress + "%)" : ""
                 font.pixelSize: 12
-                color: Material.accent
+                color: Material.foreground
             }
             
             BusyIndicator {
+                Material.accent: "#d0d0d0"
                 visible: (systemChecker && systemChecker.isChecking) ||
                          (recordingManager && recordingManager.isScanning) ||
                          (videoExporter && videoExporter.isExporting) ||

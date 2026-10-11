@@ -14,6 +14,9 @@ Page {
     property real rangeStartMs: -1
     property real rangeEndMs: -1
     readonly property bool hasRange: rangeStartMs >= 0 && rangeEndMs > rangeStartMs
+    // Re-encoding above what Steam recorded with only makes the file bigger
+    readonly property int sourceBitrateMbps: clip ? clip.videoBitrateMbps(segmentIndex) : 0
+    readonly property int maxBitrateMbps: sourceBitrateMbps > 0 ? sourceBitrateMbps : 200
 
     onClipChanged: clearRange()
     onSegmentIndexChanged: clearRange()
@@ -152,6 +155,7 @@ Page {
 
                         // Loading/Buffering indicator
                         BusyIndicator {
+                            Material.accent: "#d0d0d0"
                             anchors.centerIn: parent
                             running: mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
                             visible: running
@@ -226,6 +230,7 @@ Page {
                         }
 
                         Slider {
+                            Material.accent: "#d0d0d0"
                             id: positionSlider
                             Layout.fillWidth: true
                             enabled: root.mediaControlsEnabled && mediaPlayer.seekable
@@ -260,6 +265,7 @@ Page {
                         }
 
                         Slider {
+                            Material.accent: "#d0d0d0"
                             Layout.preferredWidth: 100
                             from: 0
                             to: 1
@@ -273,7 +279,7 @@ Page {
                         Layout.fillWidth: true
 
                         Button {
-                            text: qsTr("Set Start")
+                            text: qsTr("Start Clip Here")
                             enabled: root.mediaControlsEnabled
                             onClicked: {
                                 root.rangeStartMs = mediaPlayer.position
@@ -284,7 +290,7 @@ Page {
                         }
 
                         Button {
-                            text: qsTr("Set End")
+                            text: qsTr("End Clip Here")
                             enabled: root.mediaControlsEnabled
                             onClicked: {
                                 root.rangeEndMs = mediaPlayer.position
@@ -308,15 +314,15 @@ Page {
                             elide: Text.ElideRight
                             text: {
                                 if (root.hasRange) {
-                                    return qsTr("Export %1 – %2 (%3)")
+                                    return qsTr("Clip %1 – %2 (%3)")
                                         .arg(formatTime(root.rangeStartMs))
                                         .arg(formatTime(root.rangeEndMs))
                                         .arg(formatTime(root.rangeEndMs - root.rangeStartMs))
                                 }
                                 if (root.rangeStartMs >= 0) {
-                                    return qsTr("Start at %1, now set the end").arg(formatTime(root.rangeStartMs))
+                                    return qsTr("Clip starts at %1, now set the end").arg(formatTime(root.rangeStartMs))
                                 }
-                                return qsTr("Exporting the whole recording. Set a start and end to export only a part.")
+                                return qsTr("Play to a moment and press \"Start Clip Here\", then \"End Clip Here\". Without a clip the whole recording is exported.")
                             }
                         }
 
@@ -350,6 +356,7 @@ Page {
                         visible: videoExporter && videoExporter.isExporting
 
                         BusyIndicator {
+                            Material.accent: "#d0d0d0"
                             running: true
                             implicitWidth: 24
                             implicitHeight: 24
@@ -365,6 +372,7 @@ Page {
                             }
 
                             ProgressBar {
+                                Material.accent: "#d0d0d0"
                                 Layout.fillWidth: true
                                 value: videoExporter ? videoExporter.progress / 100.0 : 0
 
@@ -409,6 +417,8 @@ Page {
                                     if (!videoExporter || !root.clip) {
                                         return "recording.mp4"
                                     }
+                                    // Game names load after the scan; depend on it so the name updates
+                                    var gameName = root.clip.gameName
                                     var name = videoExporter.generateOutputFilename(root.clip, root.segmentIndex)
                                     if (root.hasRange) {
                                         // Keep exports of different parts of one recording apart
@@ -480,10 +490,16 @@ Page {
 
                         SpinBox {
                             from: 1
-                            to: 200
+                            to: root.maxBitrateMbps
                             editable: true
                             visible: videoExporter && videoExporter.videoCodec !== VideoExporter.CopyStream
-                            value: videoExporter ? videoExporter.videoBitrateMbps : 30
+                            value: videoExporter ? Math.min(videoExporter.videoBitrateMbps, root.maxBitrateMbps) : 30
+
+                            ToolTip.visible: hovered
+                            ToolTip.delay: 500
+                            ToolTip.text: root.sourceBitrateMbps > 0
+                                          ? qsTr("Steam recorded this at %1 Mbps, higher would only make the file bigger").arg(root.sourceBitrateMbps)
+                                          : ""
                             onValueModified: {
                                 if (videoExporter) {
                                     videoExporter.videoBitrateMbps = value
@@ -512,7 +528,9 @@ Page {
                         }
 
                         Button {
-                            text: root.hasRange ? qsTr("Export Range") : qsTr("Export Segment")
+                            text: root.hasRange ? qsTr("Export Clip")
+                                  : root.clip && root.clip.isBackgroundRecording ? qsTr("Export Whole Recording")
+                                  : qsTr("Export Segment")
                             highlighted: true
                             enabled: root.clip && root.segmentIndex >= 0 &&
                                     (!videoExporter || !videoExporter.isExporting)

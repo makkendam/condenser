@@ -126,7 +126,7 @@ Page {
                             Layout.preferredHeight: 48
                             Layout.alignment: Qt.AlignCenter
                             
-                            color: Material.primary
+                            color: Material.foreground
                             radius: 24
                             
                             Label {

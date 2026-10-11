@@ -61,6 +61,7 @@ Page {
                 }
 
                 BusyIndicator {
+                    Material.accent: "#d0d0d0"
                     anchors.centerIn: parent
                     running: recordingManager ? recordingManager.isScanning : false
                     visible: running
@@ -107,7 +108,7 @@ Page {
                         text: recordingManager ? recordingManager.clipCount.toString() : "0"
                         font.pixelSize: 20
                         font.weight: Font.Bold
-                        color: Material.primary
+                        color: Material.foreground
                     }
                 }
 
@@ -156,6 +157,7 @@ Page {
                     spacing: 16
 
                     BusyIndicator {
+                        Material.accent: "#d0d0d0"
                         running: true
                         Layout.alignment: Qt.AlignHCenter
                         implicitWidth: 64
@@ -192,47 +194,85 @@ Page {
                 }
             }
 
-            // Clips list
-            ScrollView {
-                clip: true
+            // Full recordings and saved clips, each in their own tab
+            ColumnLayout {
+                spacing: 8
 
-                ListView {
-                    id: clipsListView
+                TabBar {
+                    id: recordingTabBar
+                    Layout.fillWidth: true
 
-                    model: recordingManager
-                    spacing: 12
+                    TabButton {
+                        text: qsTr("Full Recordings (%1)").arg(backgroundRecordingsModel.count)
+                    }
+                    TabButton {
+                        text: qsTr("Clips (%1)").arg(savedClipsModel.count)
+                    }
+                }
 
-                    delegate: RecordingCard {
-                        width: clipsListView.width
-                        recordingClip: model.clip
+                RecordingFilterModel {
+                    id: backgroundRecordingsModel
+                    sourceModel: recordingManager
+                    backgroundRecordings: true
+                }
 
-                        onCardClicked: {
-                            console.log("RecordingListPage - Card clicked, model.clip:", model.clip);
-                            console.log("RecordingListPage - About to emit clipSelected signal");
-                            root.clipSelected(model.clip);
+                RecordingFilterModel {
+                    id: savedClipsModel
+                    sourceModel: recordingManager
+                    backgroundRecordings: false
+                }
+
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    ListView {
+                        id: clipsListView
+
+                        model: recordingTabBar.currentIndex === 0 ? backgroundRecordingsModel : savedClipsModel
+                        spacing: 12
+
+                        delegate: RecordingCard {
+                            width: clipsListView.width
+                            recordingClip: model.clip
+
+                            onCardClicked: {
+                                root.clipSelected(model.clip);
+                            }
                         }
-                    }
 
-                    // Pull to refresh
-                    property bool refreshing: false
-
-                    onContentYChanged: {
-                        if (contentY < -80 && !refreshing && recordingManager && !recordingManager.isScanning) {
-                            refreshing = true;
-                            recordingManager.refreshClips();
-                            refreshTimer.start();
+                        Label {
+                            anchors.centerIn: parent
+                            visible: clipsListView.count === 0
+                            text: recordingTabBar.currentIndex === 0
+                                  ? qsTr("No full recordings found.\nTurn on background recording in Steam's Game Recording settings.")
+                                  : qsTr("No clips yet.\nOpen a full recording and set a start and end to make one.")
+                            horizontalAlignment: Text.AlignHCenter
+                            color: Material.hintTextColor
                         }
-                    }
 
-                    Timer {
-                        id: refreshTimer
-                        interval: 1000
-                        onTriggered: clipsListView.refreshing = false
-                    }
+                        // Pull to refresh
+                        property bool refreshing: false
 
-                    // Add some padding at the bottom
-                    footer: Item {
-                        height: 20
+                        onContentYChanged: {
+                            if (contentY < -80 && !refreshing && recordingManager && !recordingManager.isScanning) {
+                                refreshing = true;
+                                recordingManager.refreshClips();
+                                refreshTimer.start();
+                            }
+                        }
+
+                        Timer {
+                            id: refreshTimer
+                            interval: 1000
+                            onTriggered: clipsListView.refreshing = false
+                        }
+
+                        // Add some padding at the bottom
+                        footer: Item {
+                            height: 20
+                        }
                     }
                 }
             }

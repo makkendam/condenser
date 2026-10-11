@@ -59,7 +59,7 @@ Dialog {
                             width: 40
                             height: 40
                             radius: 20
-                            color: Material.primary
+                            color: Material.foreground
 
                             Label {
                                 anchors.centerIn: parent

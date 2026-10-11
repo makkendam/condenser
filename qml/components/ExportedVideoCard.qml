@@ -51,7 +51,7 @@ ItemDelegate {
             Rectangle {
                 anchors.fill: parent
                 color: "transparent"
-                border.color: root.hovered ? Material.accent : "transparent"
+                border.color: root.hovered ? Material.foreground : "transparent"
                 border.width: 2
                 radius: 4
                 

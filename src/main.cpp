@@ -19,6 +19,7 @@
 #include "exportedvideomanager.h"
 #include "httpserver.h"
 #include "languagemanager.h"
+#include "recordingfiltermodel.h"
 
 int main(int argc, char *argv[])
 {
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<ExportedVideoManager>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "ExportedVideoManager");
     qmlRegisterType<ExportedVideo>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "ExportedVideo");
     qmlRegisterType<HttpServer>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "HttpServer");
+    qmlRegisterType<RecordingFilterModel>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "RecordingFilterModel");
     qmlRegisterType<LanguageManager>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "LanguageManager");
 
     // Create and expose global instances to QML

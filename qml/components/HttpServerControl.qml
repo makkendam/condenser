@@ -79,7 +79,7 @@ Rectangle {
                     visible: httpServer && httpServer.connectionCount > 0
                     text: httpServer ? httpServer.connectionCount.toString() : "0"
                     font.pixelSize: 11
-                    color: Material.accent
+                    color: Material.foreground
                 }
 
                 // Expand/collapse button

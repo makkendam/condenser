@@ -195,6 +195,7 @@ Page {
                 
                 // Loading indicator
                 BusyIndicator {
+                    Material.accent: "#d0d0d0"
                     visible: exportedVideoManager && exportedVideoManager.isScanning
                     anchors.centerIn: parent
                     running: visible
