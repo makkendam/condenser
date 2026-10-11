@@ -1,5 +1,6 @@
 #include "recordingclip.h"
 #include "gameinfo.h"
+#include "thumbnailprovider.h"
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -59,6 +60,17 @@ void RecordingClip::setClipPath(const QString &clipPath)
         parseClipPath();
         findThumbnail();
         scanSegments();
+        if (m_thumbnailPath.isEmpty() && !m_segments.isEmpty()) {
+            // Background recordings come without a thumbnail; make one from the video
+            const QString cover = ThumbnailProvider::coverFor(m_segments.first(), this, [this](const QString &path) {
+                m_thumbnailPath = path;
+                emit thumbnailPathChanged();
+            });
+            if (!cover.isEmpty()) {
+                m_thumbnailPath = cover;
+                emit thumbnailPathChanged();
+            }
+        }
         calculateTotalSize();
         estimateDuration();
     }

@@ -8,6 +8,8 @@
 #include <QList>
 #include <QVariantList>
 
+#include <functional>
+
 class QProcess;
 
 // Preview images for hovering the timeline. Steam stores a recording as
@@ -43,6 +45,16 @@ public:
 
     // Delete cached thumbnails of recordings that no longer exist
     static void pruneCache();
+
+    // Cover image for a recording segment, for the recordings list (Steam only
+    // saves one for clips). Returns the cached file right away if there is one;
+    // otherwise returns an empty string, makes it in the background and calls
+    // `done` with its path, unless `context` is gone by then.
+    static QString coverFor(const QString &segmentPath, QObject *context,
+                            const std::function<void(const QString &)> &done);
+
+    // Cache directory for a segment's images (created on demand)
+    static QString cacheDirFor(const QString &segmentPath);
 
 signals:
     void segmentPathChanged();

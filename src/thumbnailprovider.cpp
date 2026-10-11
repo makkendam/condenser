@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QPointer>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
@@ -57,15 +58,7 @@ void ThumbnailProvider::setSegmentPath(const QString &path)
         return;
     }
 
-    // One cache directory per segment; clips have their own chunk numbering,
-    // so key on the full path rather than the directory name
-    const QByteArray key = QCryptographicHash::hash(m_segmentPath.toUtf8(), QCryptographicHash::Sha1).toHex().left(16);
-    m_cacheDir = cacheRoot() + QLatin1Char('/') + QString::fromLatin1(key);
-    QDir().mkpath(m_cacheDir);
-    QFile source(m_cacheDir + QLatin1Char('/') + QLatin1String(SourceFileName));
-    if (!source.exists() && source.open(QIODevice::WriteOnly)) {
-        source.write(m_segmentPath.toUtf8());
-    }
+    m_cacheDir = cacheDirFor(m_segmentPath);
 
     readChunkLayout();
     findFrozenRanges();
@@ -90,6 +83,123 @@ void ThumbnailProvider::setSegmentPath(const QString &path)
     m_revision++;
     emit revisionChanged();
     startNext();
+}
+
+QString ThumbnailProvider::cacheDirFor(const QString &segmentPath)
+{
+    // One cache directory per segment; clips have their own chunk numbering,
+    // so key on the full path rather than the directory name
+    const QByteArray key = QCryptographicHash::hash(segmentPath.toUtf8(), QCryptographicHash::Sha1).toHex().left(16);
+    const QString dir = cacheRoot() + QLatin1Char('/') + QString::fromLatin1(key);
+    QDir().mkpath(dir);
+    QFile source(dir + QLatin1Char('/') + QLatin1String(SourceFileName));
+    if (!source.exists() && source.open(QIODevice::WriteOnly)) {
+        source.write(segmentPath.toUtf8());
+    }
+    return dir;
+}
+
+namespace {
+// Covers are made one at a time, so a long list of recordings doesn't
+// start a crowd of FFmpeg processes at startup
+struct CoverJob {
+    QString segmentPath;
+    QString coverPath;
+    QPointer<QObject> context;
+    std::function<void(const QString &)> done;
+    int attempt = 0;
+};
+// Where in the recording to look, tried in turn while the frame comes out (nearly) black
+const double CoverPositions[] = {0.25, 0.5, 0.75};
+// A black 320px JPEG is about 1–2 KB, a real frame 8 KB or more
+const qint64 MinCoverBytes = 4000;
+QList<CoverJob> coverQueue;
+bool coverRunning = false;
+
+// A chunk worth showing: `position` of the way in (past loading screens), and
+// not part of a frozen stretch, where neighbouring chunks have identical sizes
+QString pickCoverChunk(const QString &segmentPath, double position)
+{
+    QDir dir(segmentPath);
+    const QStringList chunks = dir.entryList({QStringLiteral("chunk-stream0-*.m4s")}, QDir::Files, QDir::Name);
+    if (chunks.isEmpty()) {
+        return QString();
+    }
+    auto sizeAt = [&](int i) { return QFileInfo(dir.absoluteFilePath(chunks.at(i))).size(); };
+    const int start = qMin(int(chunks.size() * position), int(chunks.size()) - 1);
+    for (int i = qMax(1, start); i < chunks.size() - 1; ++i) {
+        const qint64 size = sizeAt(i);
+        if (size != sizeAt(i - 1) && size != sizeAt(i + 1)) {
+            return dir.absoluteFilePath(chunks.at(i));
+        }
+    }
+    return dir.absoluteFilePath(chunks.at(start));
+}
+
+void runNextCover()
+{
+    while (!coverRunning && !coverQueue.isEmpty()) {
+        const CoverJob job = coverQueue.takeFirst();
+        if (!job.context) {
+            continue;
+        }
+        QFile init(QDir(job.segmentPath).absoluteFilePath(QStringLiteral("init-stream0.m4s")));
+        QFile media(pickCoverChunk(job.segmentPath, CoverPositions[job.attempt]));
+        if (!init.open(QIODevice::ReadOnly) || !media.open(QIODevice::ReadOnly)) {
+            continue;
+        }
+
+        coverRunning = true;
+        auto *process = new QProcess();
+        QObject::connect(process, &QProcess::finished, process, [process, job]() {
+            process->deleteLater();
+            coverRunning = false;
+            const qint64 size = QFileInfo(job.coverPath).size();
+            const bool ok = process->exitStatus() == QProcess::NormalExit && process->exitCode() == 0 && size > 0;
+            const int attempts = int(sizeof(CoverPositions) / sizeof(CoverPositions[0]));
+            if (ok && size < MinCoverBytes && job.attempt + 1 < attempts) {
+                // Try further in; the dark one stays on disk in case all are dark.
+                // Only the final image is reported, as QML caches images by path.
+                CoverJob retry = job;
+                retry.attempt++;
+                coverQueue.prepend(retry);
+            } else if (ok && job.context) {
+                job.done(job.coverPath);
+            }
+            runNextCover();
+        });
+        QObject::connect(process, &QProcess::errorOccurred, process, [process](QProcess::ProcessError error) {
+            if (error == QProcess::FailedToStart) {
+                process->deleteLater();
+                coverRunning = false;
+                coverQueue.clear(); // No FFmpeg: no point trying the rest
+            }
+        });
+        process->start(QStringLiteral("ffmpeg"), {
+            QStringLiteral("-v"), QStringLiteral("error"), QStringLiteral("-y"),
+            QStringLiteral("-f"), QStringLiteral("mp4"), QStringLiteral("-i"), QStringLiteral("pipe:0"),
+            QStringLiteral("-frames:v"), QStringLiteral("1"),
+            QStringLiteral("-vf"), QStringLiteral("scale=320:-2"),
+            QStringLiteral("-q:v"), QStringLiteral("4"),
+            job.coverPath,
+        });
+        process->write(init.readAll());
+        process->write(media.readAll());
+        process->closeWriteChannel();
+    }
+}
+}
+
+QString ThumbnailProvider::coverFor(const QString &segmentPath, QObject *context,
+                                    const std::function<void(const QString &)> &done)
+{
+    const QString coverPath = cacheDirFor(segmentPath) + QStringLiteral("/cover.jpg");
+    if (QFileInfo(coverPath).size() > 0) {
+        return coverPath;
+    }
+    coverQueue.append({segmentPath, coverPath, context, done});
+    runNextCover();
+    return QString();
 }
 
 void ThumbnailProvider::reset()
