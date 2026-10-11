@@ -44,6 +44,8 @@ public:
     // Static methods for loading game info
     static GameInfo* fromAcfFile(const QString &acfFilePath, QObject *parent = nullptr);
     static GameInfo* fromAppId(const QString &appId, const QString &steamPath, QObject *parent = nullptr);
+    // Name of a non-Steam game shortcut (from userdata/*/config/shortcuts.vdf), empty if unknown
+    static QString shortcutName(quint32 shortcutAppId, const QString &steamPath);
 
     // Utility methods
     Q_INVOKABLE QString formattedSize() const;
