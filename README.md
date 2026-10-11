@@ -36,10 +36,6 @@ The tool uses FFmpeg to convert the video files recorded by Steam into MP4 forma
 
 Beside feedback and code contribution, other contributions are also welcome!
 
-### Help Translation!
-
-[Translate into your language on Codeberg's Weblate instance](https://translate.codeberg.org/projects/pineapple-apps/pineapple-steam-recording-exporter/)
-
 ### Funding
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/blumia)

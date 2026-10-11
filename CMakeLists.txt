@@ -8,13 +8,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find required Qt6 components
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets Quick QuickControls2 Multimedia HttpServer LinguistTools)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets Quick QuickControls2 Multimedia HttpServer)
 find_package(KF6IconThemes)
 
 include(GNUInstallDirs)
 
 # Enable Qt tools
-qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES en zh_CN de nl pl tr)
+qt_standard_project_setup()
 
 # Source files
 set(SOURCES
@@ -27,7 +27,6 @@ set(SOURCES
     src/exportedvideomanager.cpp
     src/httpserver.cpp
     src/qvdfparser.cpp
-    src/languagemanager.cpp
     src/recordingfiltermodel.cpp
 )
 
@@ -41,7 +40,6 @@ set(HEADERS
     src/exportedvideomanager.h
     src/httpserver.h
     src/qvdfparser.h
-    src/languagemanager.h
     src/recordingfiltermodel.h
 )
 
@@ -50,12 +48,6 @@ qt_add_executable(PineappleSteamRecordingExporter
     WIN32
     ${SOURCES}
     ${HEADERS}
-)
-
-# Add translations
-qt_add_translations(PineappleSteamRecordingExporter
-    TS_FILE_DIR translations # Before Qt 6.9, the argument TS_OUTPUT_DIRECTORY was called TS_FILE_DIR. That name is still an alias for TS_OUTPUT_DIRECTORY to keep older project files working.
-    RESOURCE_PREFIX "/i18n"
 )
 
 # Add QML module
