@@ -334,6 +334,16 @@ Page {
                     return steps[steps.length - 1] * 1000
                 }
 
+                function isFrozenAt(ms) {
+                    var ranges = thumbnails.frozenRanges
+                    for (var i = 0; i < ranges.length; ++i) {
+                        if (ms >= ranges[i].startMs && ms < ranges[i].endMs) {
+                            return true
+                        }
+                    }
+                    return false
+                }
+
                 // Mouse position over the timeline in ms, -1 when not hovering
                 property real hoverPosition: -1
 
@@ -382,6 +392,19 @@ Page {
                     height: 4
                     radius: 2
                     color: "#b0ffffff"
+                }
+
+                // Stretches where the game wasn't sending frames: audio only
+                Repeater {
+                    model: timeline.enabled ? thumbnails.frozenRanges : []
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: timeline.xFor(modelData.startMs)
+                        width: Math.max(2, timeline.xFor(modelData.endMs) - x)
+                        height: 6
+                        radius: 2
+                        color: "#5a5a64"
+                    }
                 }
 
                 // Selected clip range
@@ -448,6 +471,14 @@ Page {
                                 source: thumbnails.revision >= 0 && timeline.hoverPosition >= 0
                                         ? thumbnails.thumbnailAt(timeline.hoverPosition) : ""
                             }
+                        }
+
+                        Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            visible: timeline.isFrozenAt(timeline.hoverPosition)
+                            text: qsTr("Frozen picture (game in background)")
+                            font.pixelSize: 11
+                            color: "#c0ffffff"
                         }
 
                         Label {

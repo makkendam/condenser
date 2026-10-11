@@ -6,6 +6,7 @@
 #include <QString>
 #include <QUrl>
 #include <QList>
+#include <QVariantList>
 
 class QProcess;
 
@@ -22,6 +23,10 @@ class ThumbnailProvider : public QObject
     Q_PROPERTY(QString segmentPath READ segmentPath WRITE setSegmentPath NOTIFY segmentPathChanged)
     // Bumped whenever a new thumbnail is available, so QML bindings re-query
     Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
+    // Stretches where the picture doesn't move, as [{startMs, endMs}]. Steam
+    // keeps recording audio but repeats the last frame while the game isn't
+    // presenting frames (e.g. alt-tabbed); such chunks encode to identical sizes.
+    Q_PROPERTY(QVariantList frozenRanges READ frozenRanges NOTIFY segmentPathChanged)
 
 public:
     explicit ThumbnailProvider(QObject *parent = nullptr);
@@ -30,6 +35,7 @@ public:
     QString segmentPath() const { return m_segmentPath; }
     void setSegmentPath(const QString &path);
     int revision() const { return m_revision; }
+    QVariantList frozenRanges() const { return m_frozenRanges; }
 
     // Closest available thumbnail for a playback position (empty URL if none
     // yet); also asks for the exact one if it doesn't exist
@@ -45,6 +51,7 @@ signals:
 private:
     void reset();
     void readChunkLayout();
+    void findFrozenRanges();
     QString thumbnailFile(int chunk) const;
     QString chunkFile(int chunk) const;
     void request(int chunk);
@@ -59,6 +66,8 @@ private:
     int m_firstChunk = 1;
     int m_chunkCount = 0;
     qint64 m_chunkDurationMs = 3000;
+
+    QVariantList m_frozenRanges;
 
     QSet<int> m_available;   // chunks with a thumbnail on disk
     QSet<int> m_inProgress;

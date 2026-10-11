@@ -15,6 +15,8 @@ const int MaxParallel = 2;
 const qint64 BackgroundIntervalMs = 12000;
 // Thumbnail width; height follows the aspect ratio
 const char *ThumbnailScale = "scale=240:-2";
+// Identical chunk sizes in a row before a stretch counts as frozen
+const int MinFrozenChunks = 3;
 // File in each cache directory naming the segment it belongs to
 const char *SourceFileName = "source";
 
@@ -49,9 +51,9 @@ void ThumbnailProvider::setSegmentPath(const QString &path)
     }
     reset();
     m_segmentPath = path;
-    emit segmentPathChanged();
 
     if (m_segmentPath.isEmpty()) {
+        emit segmentPathChanged();
         return;
     }
 
@@ -66,6 +68,8 @@ void ThumbnailProvider::setSegmentPath(const QString &path)
     }
 
     readChunkLayout();
+    findFrozenRanges();
+    emit segmentPathChanged();
 
     const QStringList cached = QDir(m_cacheDir).entryList({QStringLiteral("*.jpg")}, QDir::Files);
     for (const QString &name : cached) {
@@ -103,6 +107,7 @@ void ThumbnailProvider::reset()
     m_backgroundQueue.clear();
     m_hoverRequest = -1;
     m_chunkCount = 0;
+    m_frozenRanges.clear();
     m_cacheDir.clear();
 }
 
@@ -132,6 +137,31 @@ void ThumbnailProvider::readChunkLayout()
     if (startNumber > 0) {
         m_firstChunk = int(startNumber);
     }
+}
+
+void ThumbnailProvider::findFrozenRanges()
+{
+    auto addRange = [this](int runStart, int runLength) {
+        if (runLength < MinFrozenChunks) {
+            return;
+        }
+        QVariantMap range;
+        range[QStringLiteral("startMs")] = qint64(runStart - m_firstChunk) * m_chunkDurationMs;
+        range[QStringLiteral("endMs")] = qint64(runStart + runLength - m_firstChunk) * m_chunkDurationMs;
+        m_frozenRanges.append(range);
+    };
+
+    qint64 previousSize = -1;
+    int runStart = m_firstChunk;
+    for (int chunk = m_firstChunk; chunk < m_firstChunk + m_chunkCount; ++chunk) {
+        const qint64 size = QFileInfo(chunkFile(chunk)).size();
+        if (size <= 0 || size != previousSize) {
+            addRange(runStart, chunk - runStart);
+            runStart = chunk;
+        }
+        previousSize = size;
+    }
+    addRange(runStart, m_firstChunk + m_chunkCount - runStart);
 }
 
 void ThumbnailProvider::pruneCache()
