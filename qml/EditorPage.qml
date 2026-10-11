@@ -273,7 +273,7 @@ Page {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                height: 56
+                height: 84
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#00000000" }
                     GradientStop { position: 1.0; color: "#b0000000" }
@@ -298,6 +298,50 @@ Page {
 
                 function xFor(ms) {
                     return Math.max(0, Math.min(width, ms / duration * width))
+                }
+
+                // Labeled marks every N seconds, N picked so labels stay ~90px apart
+                readonly property real tickIntervalMs: {
+                    var steps = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200]
+                    var maxTicks = Math.max(1, Math.floor(width / 90))
+                    for (var i = 0; i < steps.length; ++i) {
+                        if (duration / (steps[i] * 1000) <= maxTicks) {
+                            return steps[i] * 1000
+                        }
+                    }
+                    return steps[steps.length - 1] * 1000
+                }
+
+                // Mouse position over the timeline in ms, -1 when not hovering
+                property real hoverPosition: -1
+
+                Repeater {
+                    model: timeline.enabled ? Math.floor((timeline.duration - 1) / timeline.tickIntervalMs) : 0
+
+                    Item {
+                        readonly property real ms: (index + 1) * timeline.tickIntervalMs
+                        x: timeline.xFor(ms)
+                        y: 0
+                        height: timeline.height
+
+                        Rectangle {
+                            anchors.horizontalCenter: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 1
+                            height: 10
+                            color: "#90ffffff"
+                        }
+
+                        Label {
+                            anchors.horizontalCenter: parent.left
+                            anchors.bottom: parent.top
+                            anchors.bottomMargin: -2
+                            text: root.formatTime(parent.ms)
+                            font.pixelSize: 10
+                            font.features: { "tnum": 1 }
+                            color: "#c0ffffff"
+                        }
+                    }
                 }
 
                 Rectangle {
@@ -353,6 +397,28 @@ Page {
                     border.color: "#40000000"
                 }
 
+                // Time under the mouse, so long recordings can be searched by hovering
+                Rectangle {
+                    visible: timeline.hoverPosition >= 0
+                    x: Math.max(-16, Math.min(timeline.width + 16 - width,
+                                              timeline.xFor(timeline.hoverPosition) - width / 2))
+                    y: -height - 18
+                    width: hoverLabel.implicitWidth + 12
+                    height: hoverLabel.implicitHeight + 6
+                    radius: 3
+                    color: "#e0000000"
+                    border.color: "#60ffffff"
+
+                    Label {
+                        id: hoverLabel
+                        anchors.centerIn: parent
+                        text: root.formatTime(timeline.hoverPosition)
+                        font.pixelSize: 12
+                        font.features: { "tnum": 1 }
+                        color: "white"
+                    }
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     anchors.topMargin: -6
@@ -364,8 +430,13 @@ Page {
                         return Math.max(0, Math.min(1, mouseX / width)) * timeline.duration
                     }
 
-                    onPressed: function(mouse) { timeline.dragPosition = msAt(mouse.x) }
+                    onExited: timeline.hoverPosition = -1
+                    onPressed: function(mouse) {
+                        timeline.dragPosition = msAt(mouse.x)
+                        timeline.hoverPosition = timeline.dragPosition
+                    }
                     onPositionChanged: function(mouse) {
+                        timeline.hoverPosition = msAt(mouse.x)
                         if (pressed) {
                             timeline.dragPosition = msAt(mouse.x)
                         }
@@ -375,6 +446,9 @@ Page {
                             mediaPlayer.setPosition(msAt(mouse.x))
                         }
                         timeline.dragPosition = -1
+                        if (!containsMouse) {
+                            timeline.hoverPosition = -1
+                        }
                     }
                 }
             }
