@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find required Qt6 components
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets Quick QuickControls2 Multimedia HttpServer)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets Quick QuickControls2 Multimedia)
 find_package(KF6IconThemes)
 
 include(GNUInstallDirs)
@@ -24,8 +24,6 @@ set(SOURCES
     src/recordingclip.cpp
     src/steamrecordingmanager.cpp
     src/videoexporter.cpp
-    src/exportedvideomanager.cpp
-    src/httpserver.cpp
     src/qvdfparser.cpp
     src/recordingfiltermodel.cpp
 )
@@ -37,8 +35,6 @@ set(HEADERS
     src/recordingclip.h
     src/steamrecordingmanager.h
     src/videoexporter.h
-    src/exportedvideomanager.h
-    src/httpserver.h
     src/qvdfparser.h
     src/recordingfiltermodel.h
 )
@@ -58,31 +54,14 @@ qt_add_qml_module(PineappleSteamRecordingExporter
         qml/main.qml
         qml/SystemCheckPage.qml
         qml/EditorPage.qml
-        qml/RecordingListPage.qml
-        qml/ClipSelectionPage.qml
-        qml/PreviewAndExportPage.qml
-        qml/VideoPreviewPage.qml
-        qml/ExportedVideosPage.qml
 
-        qml/components/RecordingCard.qml
-        qml/components/ClipCard.qml
-        qml/components/ExportedVideoCard.qml
-        qml/components/HttpServerControl.qml
         qml/components/SteamUserSelectionDialog.qml
-
 )
 
 # Add resources
 qt_add_resources(PineappleSteamRecordingExporter "icons"
     FILES
         qml/app_icon.png
-)
-
-# Add web resources
-qt_add_resources(PineappleSteamRecordingExporter "web"
-    PREFIX "/web"
-    FILES
-        web/index.html
 )
 
 # Link Qt libraries
@@ -92,7 +71,6 @@ target_link_libraries(PineappleSteamRecordingExporter PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Multimedia
-    Qt6::HttpServer
 )
 
 if(TARGET KF6::IconThemes)

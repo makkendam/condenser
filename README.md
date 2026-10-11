@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a tool for exporting video recorded by Steam as MP4 files in a fastest way and without losing any quality, and also allows you share exported MP4 videos to another device via local network.
+This is a tool for exporting video recorded by Steam as MP4 files: browse your background recordings and saved clips, cut out the part you want, and export it either without re-encoding or as widely playable H.264.
 
 This tool is designed to be used on Steam Deck, but also works on other Linux distributions and Windows as well.
 
@@ -30,7 +30,7 @@ You can also check out the nightly builds if preferred, see info below.
 
 ## How it works
 
-The tool uses FFmpeg to convert the video files recorded by Steam into MP4 format without video transcoding and without losing any quality (`ffmpeg -c copy`). It also provides a built-in HTTP server to share the exported videos over the local network.
+The tool uses FFmpeg to convert the video files recorded by Steam into MP4 format without video transcoding and without losing any quality (`ffmpeg -c copy`). Optionally it re-encodes to H.264 on the GPU (VAAPI) or CPU (libx264).
 
 ## Contribution
 

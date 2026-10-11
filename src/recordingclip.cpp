@@ -467,22 +467,6 @@ double RecordingClip::parsePtDurationSeconds(const QString &ptValue)
     return hours * 3600.0 + minutes * 60.0 + seconds;
 }
 
-QUrl RecordingClip::getThumbnailUrl() const
-{
-    if (m_thumbnailPath.isEmpty()) {
-        return QUrl();
-    }
-
-    return QUrl::fromLocalFile(m_thumbnailPath);
-}
-
-void RecordingClip::refreshSegments()
-{
-    scanSegments();
-    calculateTotalSize();
-    estimateDuration();
-}
-
 void RecordingClip::refreshGameInfo(const QString &steamPath)
 {
     if (m_appId.isEmpty() || steamPath.isEmpty()) {

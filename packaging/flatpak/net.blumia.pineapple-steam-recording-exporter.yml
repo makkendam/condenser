@@ -20,9 +20,6 @@ finish-args:
   - --filesystem=~/.steam/steam:ro
   - --filesystem=xdg-videos
  
-  # Network access
-  - --share=network
- 
   # D-Bus access for desktop integration
   - --talk-name=org.freedesktop.FileManager1
 

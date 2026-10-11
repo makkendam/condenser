@@ -194,34 +194,6 @@ bool VideoExporter::exportSegment(RecordingClip *clip, int segmentIndex, const Q
     return startExport(mpdPath, finalOutputPath, operationName);
 }
 
-bool VideoExporter::exportEntireClip(RecordingClip *clip, const QString &outputPath)
-{
-    if (!clip || !clip->isValid()) {
-        setLastError(tr("Invalid recording clip"));
-        return false;
-    }
-
-    if (m_isExporting) {
-        setLastError(tr("Export already in progress"));
-        return false;
-    }
-
-    if (clip->segmentCount() == 0) {
-        setLastError(tr("No segments found in recording clip"));
-        return false;
-    }
-
-    if (clip->segmentCount() == 1) {
-        // Just export the single segment
-        return exportClipSegment(clip, 0, outputPath);
-    }
-
-    // TODO: Implement multi-segment concatenation
-    // For now, just export the first segment with a warning
-    addToLog(tr("Warning: Multi-segment export not yet implemented. Exporting first segment only."));
-    return exportClipSegment(clip, 0, outputPath);
-}
-
 void VideoExporter::cancelExport()
 {
     if (!m_isExporting || !m_ffmpegProcess) {
@@ -266,13 +238,6 @@ QString VideoExporter::generateOutputFilename(RecordingClip *clip, int segmentIn
     }
 
     return sanitizeFilename(baseName) + ".mp4";
-}
-
-QString VideoExporter::selectOutputPath(const QString &suggestedName) const
-{
-    // This would typically open a file dialog, but for now just return a path in the default directory
-    QString filename = suggestedName.isEmpty() ? "recording.mp4" : suggestedName;
-    return QDir(m_defaultExportPath).absoluteFilePath(filename);
 }
 
 bool VideoExporter::validateOutputPath(const QString &path) const

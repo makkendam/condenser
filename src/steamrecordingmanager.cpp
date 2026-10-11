@@ -147,12 +147,6 @@ void SteamRecordingManager::refreshClips()
     }
 }
 
-void SteamRecordingManager::clearClips()
-{
-    clearAllClips();
-    clearScanResults();
-}
-
 RecordingClip* SteamRecordingManager::getClip(int index) const
 {
     if (index < 0 || index >= m_clips.size()) {
@@ -171,19 +165,6 @@ RecordingClip* SteamRecordingManager::latestBackgroundRecording() const
         }
     }
     return latest;
-}
-
-QStringList SteamRecordingManager::getClipsByGame(const QString &appId) const
-{
-    QStringList clipPaths;
-    
-    for (RecordingClip *clip : m_clips) {
-        if (clip && clip->appId() == appId) {
-            clipPaths.append(clip->clipPath());
-        }
-    }
-    
-    return clipPaths;
 }
 
 int SteamRecordingManager::getClipIndex(RecordingClip *clip) const

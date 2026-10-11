@@ -10,8 +10,6 @@ import "components"
 Page {
     id: root
 
-    signal exportedVideosRequested()
-
     // What is loaded in the player
     property RecordingClip loadedClip: null
     property int segmentIndex: 0
@@ -168,7 +166,9 @@ Page {
             ToolButton {
                 icon.name: "folder-videos-symbolic"
                 text: qsTr("Exported Videos")
-                onClicked: root.exportedVideosRequested()
+                onClicked: Qt.openUrlExternally("file://" + videoExporter.defaultExportPath)
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Open the export folder")
             }
 
             ToolButton {

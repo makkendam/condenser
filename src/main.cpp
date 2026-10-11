@@ -15,8 +15,6 @@
 #include "videoexporter.h"
 #include "gameinfo.h"
 #include "recordingclip.h"
-#include "exportedvideomanager.h"
-#include "httpserver.h"
 #include "recordingfiltermodel.h"
 
 int main(int argc, char *argv[])
@@ -46,28 +44,17 @@ int main(int argc, char *argv[])
     qmlRegisterType<SteamRecordingManager>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "SteamRecordingManager");
     qmlRegisterType<SystemChecker>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "SystemChecker");
     qmlRegisterType<VideoExporter>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "VideoExporter");
-    qmlRegisterType<GameInfo>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "GameInfo");
     qmlRegisterType<RecordingClip>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "RecordingClip");
-    qmlRegisterType<ExportedVideoManager>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "ExportedVideoManager");
-    qmlRegisterType<ExportedVideo>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "ExportedVideo");
-    qmlRegisterType<HttpServer>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "HttpServer");
     qmlRegisterType<RecordingFilterModel>("net.blumia.pineapple.streamrecordingexporter", 1, 0, "RecordingFilterModel");
 
     // Create and expose global instances to QML
     SystemChecker systemChecker;
     SteamRecordingManager recordingManager;
     VideoExporter videoExporter;
-    ExportedVideoManager exportedVideoManager;
-    HttpServer httpServer;
 
     engine.rootContext()->setContextProperty("systemChecker", &systemChecker);
     engine.rootContext()->setContextProperty("recordingManager", &recordingManager);
     engine.rootContext()->setContextProperty("videoExporter", &videoExporter);
-    engine.rootContext()->setContextProperty("exportedVideoManager", &exportedVideoManager);
-    engine.rootContext()->setContextProperty("httpServer", &httpServer);
-
-    // Connect HTTP server to video manager
-    httpServer.setExportedVideoManager(&exportedVideoManager);
 
     // Set up QML import paths
     engine.addImportPath("qrc:/");

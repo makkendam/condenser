@@ -60,12 +60,10 @@ public:
     // Export only [startMs, endMs) of a segment
     Q_INVOKABLE bool exportClipRange(RecordingClip *clip, int segmentIndex, qint64 startMs, qint64 endMs,
                                      const QString &outputPath = QString());
-    Q_INVOKABLE bool exportEntireClip(RecordingClip *clip, const QString &outputPath = QString());
     Q_INVOKABLE void cancelExport();
     
     // Utility methods
     Q_INVOKABLE QString generateOutputFilename(RecordingClip *clip, int segmentIndex = -1) const;
-    Q_INVOKABLE QString selectOutputPath(const QString &suggestedName = QString()) const;
     Q_INVOKABLE bool validateOutputPath(const QString &path) const;
     Q_INVOKABLE void clearLog();
     Q_INVOKABLE void openExportLocation(const QString &filePath) const;

@@ -6,28 +6,22 @@ import net.blumia.pineapple.streamrecordingexporter
 
 ApplicationWindow {
     id: mainWindow
-    
+
     visible: true
     // Most of the screen: a big player and still room for a good part of the session list
     width: Math.min(1700, Math.round(Screen.desktopAvailableWidth * 0.85))
     height: Math.min(1500, Math.round(Screen.desktopAvailableHeight * 0.92))
     minimumWidth: 800
     minimumHeight: 600
-    
+
     title: qsTr("Pineapple Steam Recording Exporter")
-    
+
     Material.theme: Material.Dark
     Material.primary: "#121212"
     // Dark blue for filled buttons (white text); controls drawn on the dark
     // background (tabs, sliders, dialogs) override it with a light blue
     Material.accent: "#1a3d6e"
-    
-    // Global properties
-    property string currentPage: "editor"
-    property var selectedClip: null
-    property int selectedSegmentIndex: -1
-    property var selectedExportedVideo: null
-    
+
     // Auto-fullscreen in SteamOS game mode
     Component.onCompleted: {
         if (systemChecker && systemChecker.isSteamGameMode) {
@@ -35,25 +29,20 @@ ApplicationWindow {
         }
         systemChecker.startSystemCheck()
     }
-    
-    // Page stack for navigation
+
+    // The editor is the main screen; the system check runs in the background
+    // and its page only shows up on top when something is missing
     StackView {
         id: pageStack
         anchors.fill: parent
-        
-        // The editor is the main screen; the system check runs in the
-        // background and only shows up when something is missing
-        initialItem: editorComponent
+        initialItem: EditorPage {}
     }
 
     Component {
         id: systemCheckComponent
 
         SystemCheckPage {
-            onSystemCheckPassed: {
-                pageStack.pop()
-                currentPage = "editor"
-            }
+            onSystemCheckPassed: pageStack.pop()
         }
     }
 
@@ -61,7 +50,7 @@ ApplicationWindow {
         target: systemChecker
 
         function onSystemCheckCompleted() {
-            if (pageStack.depth > 1 && currentPage === "systemCheck") {
+            if (pageStack.depth > 1) {
                 return // The visible check page handles rechecks itself
             }
             if (systemChecker.allChecksPass) {
@@ -69,196 +58,21 @@ ApplicationWindow {
                 recordingManager.startScan()
             } else {
                 pageStack.push(systemCheckComponent)
-                currentPage = "systemCheck"
-            }
-        }
-    }
-    
-    // Components for different pages
-    Component {
-        id: editorComponent
-
-        EditorPage {
-            onExportedVideosRequested: {
-                pageStack.push(exportedVideosComponent)
-                currentPage = "exportedVideos"
             }
         }
     }
 
-    Component {
-        id: recordingListComponent
-        
-        RecordingListPage {
-            onClipSelected: function(clip) {
-                console.log("main.qml - Received clipSelected signal with clip:", clip)
-                console.log("main.qml - Clip appId:", clip ? clip.appId : "null")
-                console.log("main.qml - Clip segmentCount:", clip ? clip.segmentCount : "null")
-                selectedClip = clip
-                if (clip.segmentCount > 1) {
-                    // Show clip selection page for multi-segment recordings
-                    console.log("main.qml - Navigating to clip selection (multi-segment)")
-                    pageStack.push(clipSelectionComponent)
-                    currentPage = "clipSelection"
-                } else {
-                    // Go directly to preview for single-segment recordings
-                    console.log("main.qml - Navigating to preview (single segment)")
-                    selectedSegmentIndex = 0
-                    pageStack.push(previewAndExportComponent)
-                    currentPage = "previewAndExport"
-                }
-            }
-            
-            onExportedVideosRequested: {
-                pageStack.push(exportedVideosComponent)
-                currentPage = "exportedVideos"
-            }
-            
-            onBackRequested: {
-                pageStack.pop()
-                currentPage = "systemCheck"
-            }
-        }
-    }
-    
-    Component {
-        id: clipSelectionComponent
-        
-        ClipSelectionPage {
-            clip: selectedClip
-            
-            onSegmentSelected: function(segmentIndex) {
-                selectedSegmentIndex = segmentIndex
-                pageStack.push(previewAndExportComponent)
-                currentPage = "previewAndExport"
-            }
-            
-            onBackRequested: {
-                pageStack.pop()
-                currentPage = "recordingList"
-                selectedClip = null
-            }
-        }
-    }
-    
-    Component {
-        id: previewAndExportComponent
-        
-        PreviewAndExportPage {
-            clip: selectedClip
-            segmentIndex: selectedSegmentIndex
-            
-            onBackRequested: {
-                if (selectedClip && selectedClip.segmentCount > 1) {
-                    pageStack.pop()
-                    currentPage = "clipSelection"
-                } else {
-                    pageStack.pop()
-                    currentPage = "recordingList"
-                    selectedClip = null
-                }
-                selectedSegmentIndex = -1
-            }
-            
-            onExportCompleted: {
-                // Could show a success message or navigate back
-                console.log("Export completed successfully")
-            }
-        }
-    }
-    
-    Component {
-        id: exportedVideosComponent
-        
-        ExportedVideosPage {
-            onVideoSelected: function(video) {
-                selectedExportedVideo = video
-                pageStack.push(videoPreviewComponent)
-                currentPage = "videoPreview"
-            }
-            
-            onBackRequested: {
-                pageStack.pop()
-                currentPage = "editor"
-                selectedExportedVideo = null
-            }
-        }
-    }
-    
-    Component {
-        id: videoPreviewComponent
-        
-        VideoPreviewPage {
-            video: selectedExportedVideo
-            
-            onBackRequested: {
-                pageStack.pop()
-                currentPage = "exportedVideos"
-                selectedExportedVideo = null
-            }
-            
-            onVideoDeleted: {
-                // Go back to exported videos list
-                pageStack.pop()
-                currentPage = "exportedVideos"
-                selectedExportedVideo = null
-            }
-        }
-    }
-    
-    // Global shortcuts
-    Shortcut {
-        sequences: [StandardKey.Back]
-        enabled: pageStack.depth > 1 && currentPage !== "systemCheck"
-        onActivated: {
-            if (pageStack.depth > 1) {
-                pageStack.pop()
-                updateCurrentPage()
-            }
-        }
-    }
-    
-    Shortcut {
-        sequences: ["Escape"]
-        enabled: pageStack.depth > 1 && currentPage !== "systemCheck"
-        onActivated: {
-            if (pageStack.depth > 1) {
-                pageStack.pop()
-                updateCurrentPage()
-            }
-        }
-    }
-    
     Shortcut {
         sequences: [StandardKey.Quit]
         onActivated: Qt.quit()
     }
-    
+
     Shortcut {
         sequences: ["Ctrl+R"]
-        enabled: currentPage === "editor"
-        onActivated: {
-            if (recordingManager) {
-                recordingManager.refreshClips()
-            }
-        }
+        enabled: pageStack.depth === 1
+        onActivated: recordingManager.refreshClips()
     }
-    
-    // Functions
-    function updateCurrentPage() {
-        switch (pageStack.depth) {
-        case 1:
-            currentPage = "editor"
-            break
-        case 2:
-            currentPage = "exportedVideos"
-            break
-        case 3:
-            currentPage = "videoPreview"
-            break
-        }
-    }
-    
+
     // Handle window close
     onClosing: function(close) {
         if (videoExporter && videoExporter.isExporting) {
@@ -267,23 +81,23 @@ ApplicationWindow {
             confirmExitDialog.open()
         }
     }
-    
+
     // Exit confirmation dialog
     Dialog {
         Material.accent: "#8ab4f8"
         id: confirmExitDialog
-        
+
         anchors.centerIn: parent
         modal: true
         title: qsTr("Export in Progress")
-        
+
         Label {
             text: qsTr("An export operation is currently in progress. Are you sure you want to exit?")
             wrapMode: Text.WordWrap
         }
-        
+
         standardButtons: Dialog.Yes | Dialog.No
-        
+
         onAccepted: {
             if (videoExporter) {
                 videoExporter.cancelExport()
